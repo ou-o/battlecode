@@ -1,0 +1,97 @@
+<view class="battle">
+
+  <view class="cam-wrap" wx:if="{{cameraOn}}">
+    <camera id="cam" class="camera" mode="normal" resolution="medium" frame-size="medium" device-position="back" flash="off" binderror="onCameraError"></camera>
+    <canvas type="2d" id="overlay" class="overlay"></canvas>
+
+    <!-- top HUD: self hp + identity -->
+    <view class="hud-top" style="background: rgba(12,14,20,0.78);">
+      <view class="me-row">
+        <text class="me-name">{{myUnit.name || '未绑定'}}</text>
+        <text class="me-meta">[{{myUnit.faction || '-'}} {{ROLE_CN[myUnit.role] || '-'}}] id {{myUnit.id || '?'}}</text>
+        <text class="fps">FPS {{fps}}</text>
+      </view>
+      <view class="bar hpbar">
+        <view class="fill {{myUnit.faction === 'red' ? 'red' : 'blue'}}" style="width:{{myUnit ? myUnit.hp / myUnit.maxHp * 100 : 0}}%"></view>
+        <text wx:if="{{myUnit}}">{{myUnit.hp}}/{{myUnit.maxHp}}</text>
+      </view>
+    </view>
+
+    <!-- sides: friends (blue hp+num) and enemies (red hp only) -->
+    <view class="side friends">
+      <view class="side-title">友方</view>
+      <view wx:for="{{friends}}" wx:key="id" class="side-row">
+        <text class="sr-n">id{{item.id}} {{item.name}}</text>
+        <view class="bar">
+          <view class="fill {{item.faction === 'red' ? 'red' : 'blue'}}" style="width:{{item.hp / item.maxHp * 100}}%"></view>
+          <text>{{item.hp}}/{{item.maxHp}} {{item.alive ? '' : '💀'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="side enemies">
+      <view class="side-title">敌方</view>
+      <view wx:for="{{enemies}}" wx:key="id" class="side-row">
+        <text class="sr-n">id{{item.id}}</text>
+        <view class="bar">
+          <view class="fill {{item.faction === 'red' ? 'red' : 'blue'}}" style="width:{{item.hp / item.maxHp * 100}}%"></view>
+          <text>●{{item.alive ? '存活' : '阵亡'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- bases -->
+    <view class="bases">
+      <view class="base red-base">
+        <text>红基地 id34</text>
+        <view class="bar"><view class="fill red" style="width:{{redBase ? redBase.hp / redBase.maxHp * 100 : 0}}%"></view><text wx:if="{{redBase}}"> {{redBase.hp}}/{{redBase.maxHp}}</text></view>
+      </view>
+      <view class="base blue-base">
+        <text>蓝基地 id35</text>
+        <view class="bar"><view class="fill blue" style="width:{{blueBase ? blueBase.hp / blueBase.maxHp * 100 : 0}}%"></view><text wx:if="{{blueBase}}"> {{blueBase.hp}}/{{blueBase.maxHp}}</text></view>
+      </view>
+    </view>
+
+    <!-- bunkers -->
+    <view class="bunkers">
+      <view class="base-mini" wx:for="{{bunkers}}" wx:key="id">
+        <text class="bk {{item.destroyed ? 'dstr' : ''}}">id{{item.id}}{{item.destroyed ? '❌' : ''}}</text>
+      </view>
+    </view>
+
+    <!-- attack button -->
+    <view class="footer">
+      <button class="attack-btn" bindtap="attack" disabled="{{!myUnit || !myUnit.canAttack || !myUnit.alive}}">
+        攻击 {{myUnit && !myUnit.alive ? '(阵亡)' : ''}}
+      </button>
+      <button class="toggle-btn" bindtap="toggle">{{running ? '暂停' : '继续'}}</button>
+    </view>
+
+    <!-- banner / floaters / kill banner -->
+    <view wx:if="{{bannerText}}" class="banner {{bannerClass}}">{{bannerText}}</view>
+    <view wx:if="{{statusText}}" class="loading-hint">{{statusText}}</view>
+
+    <!-- death overlay -->
+    <view wx:if="{{myUnit && !myUnit.alive}}" class="dead-overlay">
+      <view wx:if="{{!respawnReady}}" class="dead-inner">
+        <view class="dead-title">已阵亡</view>
+        <view class="dead-sub">复活倒计时</view>
+        <view class="dead-counter">{{respawnRemain}} s</view>
+      </view>
+      <view wx:if="{{respawnReady}}" class="dead-inner">
+        <view class="dead-title">可复活</view>
+        <view class="dead-sub">请走到己方基地前拍下基地标签</view>
+        <button class="revive-btn" bindtap="respawnAtBase">已拍基地，立即复位</button>
+      </view>
+    </view>
+
+    <!-- end overlay -->
+    <view wx:if="{{endedOverlay}}" class="end-overlay">
+      <view class="end-inner">
+        <view class="end-title">{{winnerText}}</view>
+        <button class="bc-btn success" bindtap="returnToResult">查看结算</button>
+      </view>
+    </view>
+  </view>
+
+</view>

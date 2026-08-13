@@ -1,0 +1,38 @@
+<view class="page">
+  <view class="banner">{{winnerText}}</view>
+
+  <view class="bc-card">
+    <view class="sec-title">个人战绩</view>
+    <view class="table">
+      <view class="thr">
+        <text>ID</text><text>昵称</text><text>阵营</text><text>角色</text>
+        <text>击杀</text><text>死亡</text><text>造成</text><text>承受</text><text>治疗</text><text>掩体</text><text>存活</text>
+      </view>
+      <view wx:for="{{stats}}" wx:key="playerId" class="trr {{item.faction}}">
+        <text>{{item.playerId}}</text>
+        <text>{{item.name}}</text>
+        <text>{{item.faction}}</text>
+        <text>{{ROLE_CN[item.role]}}</text>
+        <text>{{item.kills}}</text>
+        <text>{{item.deaths}}</text>
+        <text>{{item.dealt}}</text>
+        <text>{{item.taken}}</text>
+        <text>{{item.healed}}</text>
+        <text>{{item.bunkersDestroyed}}</text>
+        <text>{{item.alive ? '存活' : '阵亡'}}</text>
+      </view>
+      <view wx:if="{{!stats.length}}" class="empty">暂无统计</view>
+    </view>
+  </view>
+
+  <view class="bc-card" wx:if="{{snapshot.units.length}}">
+    <view class="sec-title">单位存活</view>
+    <view class="units">
+      <text wx:for="{{snapshot.units}}" wx:for-item="u" wx:key="id" class="unit {{u.faction}}">
+        [{{u.kind}}] id{{u.id}}{{u.faction ? ' ' + u.faction : ''}} HP {{u.hp}}/{{u.maxHp}}{{u.destroyed ? ' ❌' : ''}}{{!u.alive ? ' 💀' : ''}}
+      </text>
+    </view>
+  </view>
+
+  <button class="bc-btn" bindtap="backToLobby">返回大厅</button>
+</view>

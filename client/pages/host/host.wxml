@@ -1,0 +1,58 @@
+<view class="page">
+  <view wx:if="{{!created}}" class="setup">
+    <view class="bc-title">房主建房</view>
+    <view class="bc-row">
+      <label>房主昵称
+        <input class="bc-input" data-k="hostName" bindinput="onInput" value="{{hostName}}" placeholder="你的昵称" />
+      </label>
+    </view>
+    <view class="bc-row">
+      <label>自选房间号（三位数字，留空随机）
+        <input class="bc-input" data-k="codeHint" type="number" bindinput="onInput" value="{{codeHint}}" placeholder="如 365" maxlength="3" />
+      </label>
+    </view>
+    <view class="bc-err" wx:if="{{err}}">{{err}}</view>
+    <button class="bc-btn" bindtap="createRoom">创建房间</button>
+  </view>
+
+  <view wx:if="{{created}}" class="panel">
+    <view class="bc-title">房间 {{code}}</view>
+    <view class="bc-muted">阶段：{{phaseText}}</view>
+    <view class="bc-muted">hostToken: <text class="token">{{hostToken}}</text></view>
+
+    <view class="bc-card">
+      <view class="sec-title">玩家（{{snapshot.players.length}}）</view>
+      <view class="player-list">
+        <view wx:for="{{snapshot.players}}" wx:key="socketId" class="player-row">
+          <text class="dot {{item.online ? 'on' : 'off'}}"></text>
+          <text class="nm">{{item.name}}</text>
+          <text class="tag" wx:if="{{item.faction}}">{{item.faction}}</text>
+          <text class="tag" wx:if="{{item.role}}">{{item.role}}</text>
+          <text class="tag" wx:if="{{item.tagId != null}}">ID {{item.tagId}}</text>
+        </view>
+      </view>
+      <view class="bc-muted" wx:if="{{!snapshot.players.length}}">还没有玩家加入</view>
+    </view>
+
+    <view class="bc-card">
+      <view class="sec-title">掩体（24–33）</view>
+      <view class="pill-row" style="margin-bottom: 12rpx;">
+        <text wx:for="{{snapshot.units}}" wx:for-item="u" wx:key="id" wx:if="{{u.kind === 'bunker'}}" class="tag {{u.destroyed ? 'dstr' : ''}}">id{{u.id}}{{u.destroyed ? '❌' : '✓'}}</text>
+      </view>
+      <input class="bc-input" bindinput="onBunkerInput" value="{{bunkerInput}}" placeholder="如 24,25,30" />
+      <button class="bc-btn" bindtap="bindBunkers">录入掩体</button>
+    </view>
+
+    <view class="bc-card">
+      <view class="sec-title">基地（不可改 ID，固定 34 红 / 35 蓝）</view>
+      <view class="base-row">
+        <text style="color: #ff6b6b;">红 id34 ✓</text>
+        <text style="color: #4d9bff;">蓝 id35 ✓</text>
+      </view>
+    </view>
+
+    <view class="bc-err" wx:if="{{err}}">{{err}}</view>
+    <button class="bc-btn success" bindtap="startGame" disabled="{{phaseText === '对战中'}}">开始游戏</button>
+    <button class="bc-btn danger" bindtap="closeRoom">关闭房间</button>
+  </view>
+</view>

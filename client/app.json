@@ -1,0 +1,22 @@
+{
+  "pages": [
+    "pages/lobby/lobby",
+    "pages/host/host",
+    "pages/index/index",
+    "pages/result/result"
+  ],
+  "workers": "workers",
+  "window": {
+    "navigationBarBackgroundColor": "#000000",
+    "navigationBarTitleText": "BattleCode",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#000000"
+  },
+  "permission": {
+    "scope.camera": {
+      "desc": "用于实时识别 AprilTag 25h9 标签进行对战"
+    }
+  },
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

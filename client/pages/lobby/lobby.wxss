@@ -1,0 +1,25 @@
+.page { padding: 24rpx; }
+.bc-title { font-size: 44rpx; font-weight: 700; margin: 24rpx 0; }
+.muted-row { display: flex; justify-content: space-between; font-size: 24rpx; margin: 12rpx 0; }
+.link { color: #4d9bff; }
+.center { text-align: center; }
+.sec-title { font-size: 26rpx; color: #9aa6bd; margin-bottom: 16rpx; }
+
+.player-list { display: flex; flex-direction: column; gap: 12rpx; }
+.player-row { display: flex; align-items: center; gap: 12rpx; font-size: 26rpx; }
+.dot { width: 16rpx; height: 16rpx; border-radius: 50%; display: inline-block; }
+.dot.on { background: #6bd96b; }
+.dot.off { background: #42485a; }
+.nm { flex: 1; }
+.tag { background: #2a3142; padding: 4rpx 12rpx; border-radius: 6rpx; font-size: 22rpx; }
+
+.pill-row { display: flex; flex-wrap: wrap; }
+.already-bound { color: #6bd96b; font-size: 24rpx; margin-top: 12rpx; text-align: center; }
+
+.overlay { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(0,0,0,0.92); z-index: 200; }
+.overlay-inner { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.bindCam { width: 100%; flex: 1; }
+.overlay-hud { padding: 24rpx; background: #0c0e14; color: white; }
+.found { font-size: 32rpx; color: #6bd96b; margin: 16rpx 0; }
+.manual-row { margin: 16rpx 0; }
+.inline { flex: 1; margin: 12rpx 8rpx; width: auto; }

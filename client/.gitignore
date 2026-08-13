@@ -1,0 +1,9 @@
+# Emscripten build cache (clone of AprilRobotics/apriltag source)
+.build/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/

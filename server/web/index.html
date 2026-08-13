@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>BattleCode 控制台</title>
+<link rel="stylesheet" href="console.css" />
+</head>
+<body>
+<div id="setup">
+  <h1>BattleCode 房主控制台</h1>
+  <p class="muted">建房或重连已有房间。房主 token 在建房后只显示一次。</p>
+  <div class="row">
+    <label>房主名 <input id="hostName" placeholder="房主昵称"></label>
+    <label>自选房间号（三位数字，可空随机）
+      <input id="codeHint" placeholder="如 365" maxlength="3" pattern="\d{3}">
+    </label>
+    <button id="btnCreate">建房</button>
+  </div>
+  <div class="row">
+    <hr>
+    <label>已有房间号 <input id="reconnectCode" placeholder="三位数字" maxlength="3"></label>
+    <label>hostToken <input id="reconnectToken" placeholder="server 给出的 token"></label>
+    <button id="btnReconnect">重连</button>
+  </div>
+  <p class="muted" id="setupErr"></p>
+</div>
+
+<div id="panel" hidden>
+  <header>
+    <span>房间号 <b id="code"></b></span>
+    <span>阶段 <b id="phase"></b></span>
+    <span>token <code id="token"></code></span>
+    <span class="spacer"></span>
+    <button id="btnStart">开始游戏</button>
+    <button id="btnClose" class="danger">关闭房间</button>
+  </header>
+
+  <main>
+    <section>
+      <h2>玩家</h2>
+      <table id="players">
+        <thead><tr><th>昵称</th><th>在线</th><th>阵营</th><th>角色</th><th>绑定ID</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>掩体（24-33）</h2>
+      <div class="row">
+        <input id="bunkerIds" placeholder="如 24,25,26,30">
+        <button id="btnBindBunkers">录入</button>
+      </div>
+      <div id="bunkers"></div>
+    </section>
+
+    <section>
+      <h2>基地血量</h2>
+      <div class="bar-row">
+        <span class="lbl red">红 34</span>
+        <div class="bar"><div id="redHp" class="fill red"></div><span id="redHpText"></span></div>
+      </div>
+      <div class="bar-row">
+        <span class="lbl blue">蓝 35</span>
+        <div class="bar"><div id="blueHp" class="fill blue"></div><span id="blueHpText"></span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>玩家血量</h2>
+      <div id="units"></div>
+    </section>
+  </main>
+
+  <aside>
+    <h2>事件流</h2>
+    <ol id="log"></ol>
+  </aside>
+</div>
+
+<script src="console.js"></script>
+</body>
+</html>

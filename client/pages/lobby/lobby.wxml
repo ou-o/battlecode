@@ -1,0 +1,94 @@
+<view class="page">
+
+  <view wx:if="{{!joined}}" class="setup">
+    <view class="bc-title">加入对局</view>
+
+    <view class="bc-row">
+      <label>昵称
+        <input class="bc-input" data-k="name" bindinput="onInput" value="{{name}}" placeholder="你的昵称" />
+      </label>
+    </view>
+    <view class="bc-row">
+      <label>房间号(三位数字)
+        <input class="bc-input" data-k="code" type="number" bindinput="onInput" value="{{code}}" placeholder="如 365" maxlength="3" />
+      </label>
+    </view>
+    <view wx:if="{{showServerInput}}" class="bc-row">
+      <label>服务器地址
+        <input class="bc-input" bindinput="onServerInput" value="{{serverUrl}}" placeholder="ws://host:port" />
+      </label>
+    </view>
+    <view class="muted-row">
+      <text class="link" bindtap="toggleServerInput">{{showServerInput ? '收起' : '修改服务器地址'}}</text>
+      <text class="link" bindtap="gotoHost">我是房主 →</text>
+    </view>
+
+    <view class="bc-err" wx:if="{{err}}">{{err}}</view>
+    <button class="bc-btn" bindtap="joinRoom">加入房间</button>
+  </view>
+
+  <view wx:if="{{joined}}" class="joined">
+    <view class="bc-title">房间 {{snapshot.code}} · {{phase}}</view>
+    <view class="bc-muted">在线玩家 {{snapshot.players.length}}</view>
+
+    <view class="bc-card">
+      <view class="sec-title">已加入玩家</view>
+      <view class="player-list">
+        <view wx:for="{{snapshot.players}}" wx:key="socketId" class="player-row">
+          <text class="dot {{item.online ? 'on' : 'off'}}"></text>
+          <text class="nm">{{item.name}}</text>
+          <text class="tag" wx:if="{{item.faction}}">阵营 {{item.faction}}</text>
+          <text class="tag" wx:if="{{item.role}}">{{ROLE_CN[item.role]}}</text>
+          <text class="tag" wx:if="{{item.tagId != null}}">ID {{item.tagId}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="bc-card">
+      <view class="sec-title">1. 选择阵营</view>
+      <view class="pill-row">
+        <text class="pill red {{faction === 'red' ? 'active' : ''}}" data-fac="red" bindtap="onFactionTap">红方</text>
+        <text class="pill blue {{faction === 'blue' ? 'active' : ''}}" data-fac="blue" bindtap="onFactionTap">蓝方</text>
+      </view>
+    </view>
+
+    <view class="bc-card">
+      <view class="sec-title">2. 选择角色</view>
+      <view class="pill-row">
+        <text class="pill {{role === 'assault' ? 'active' : ''}}" data-role="assault" bindtap="onRoleTap">突击兵</text>
+        <text class="pill {{role === 'engineer' ? 'active' : ''}}" data-role="engineer" bindtap="onRoleTap">工程师</text>
+        <text class="pill {{role === 'sniper' ? 'active' : ''}}" data-role="sniper" bindtap="onRoleTap">狙击手</text>
+      </view>
+    </view>
+
+    <view class="bc-card">
+      <view class="sec-title">3. 绑定你的 AprilTag</view>
+      <view class="bc-muted">拍下你拿到的那张 25h9 标签，自动绑定 ID（0–23）。</view>
+      <button class="bc-btn" bindtap="startBinding">{{me.tagId != null ? '重新拍标签' : '拍标签绑定'}}</button>
+      <view wx:if="{{me.tagId != null}}" class="already-bound">已绑定 ID {{me.tagId}} ✓</view>
+    </view>
+
+    <view class="bc-err" wx:if="{{err}}">{{err}}</view>
+    <view class="bc-muted center" wx:if="{{me.tagId != null}}">等待房主录入掩体并开始游戏…</view>
+  </view>
+
+  <!-- binding overlay -->
+  <view wx:if="{{bindingTag}}" class="overlay">
+    <view class="overlay-inner">
+      <camera id="bindingCam" class="bindCam" device-position="back" flash="off" frame-size="medium"></camera>
+      <view class="overlay-hud">
+        <view class="bc-muted">对准你的标签，识别后会显示在此</view>
+        <view wx:if="{{bindingError}}" class="bc-err">{{bindingError}}</view>
+        <view wx:if="{{bindingFoundIds.length}}" class="found">检测到 ID：{{bindingFoundIds}}</view>
+        <view class="manual-row">
+          <input class="bc-input" placeholder="或手动输入 ID (0-23)" type="number" bindinput="manualTagInput" />
+        </view>
+        <view class="bc-row">
+          <button class="bc-btn danger inline" bindtap="cancelBinding">取消</button>
+          <button class="bc-btn success inline" bindtap="confirmBinding" disabled="{{!bindingFoundIds.length}}">绑定</button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+</view>

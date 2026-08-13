@@ -1,0 +1,32 @@
+page {
+  background: #0c0e14;
+  color: #dfe4ee;
+  font: 14px/1.5 -apple-system, "PingFang SC", sans-serif;
+}
+
+.bc-card { background: #181c26; padding: 16rpx 20rpx; border-radius: 12rpx; margin: 16rpx 0; }
+.bc-row { display: flex; align-items: center; gap: 16rpx; margin: 12rpx 0; flex-wrap: wrap; }
+.bc-row > label { display: flex; flex-direction: column; gap: 6rpx; color: #7d8696; font-size: 22rpx; }
+.bc-input { background: #0f1117; border: 1px solid #2a3142; color: #dfe4ee; padding: 12rpx 16rpx; border-radius: 8rpx; min-width: 320rpx; flex: 1; }
+
+/* faction / role pills */
+.pill { display: inline-block; padding: 14rpx 28rpx; border-radius: 40rpx; border: 2rpx solid #2a3142; background: #0f1117; color: #9aa6bd; font-size: 26rpx; margin: 8rpx; }
+.pill.active { background: #2d6cf5; border-color: #2d6cf5; color: white; }
+.pill.red.active { background: #b4373b; border-color: #b4373b; }
+.pill.blue.active { background: #2d6cf5; border-color: #2d6cf5; }
+
+.bc-btn { background: #2d6cf5; color: white; border: none; border-radius: 10rpx; padding: 18rpx 32rpx; font-size: 28rpx; width: 100%; margin: 12rpx 0; }
+.bc-btn:disabled { opacity: 0.5; }
+.bc-btn.danger { background: #b4373b; }
+.bc-btn.success { background: #6bd96b; color: #0c0e14; }
+
+.bc-title { font-size: 40rpx; font-weight: 600; margin: 24rpx 0 8rpx; }
+.bc-muted { color: #7d8696; font-size: 24rpx; }
+.bc-err { color: #ff6b6b; font-size: 24rpx; margin: 8rpx 0; }
+
+.bar { height: 24rpx; background: #0f1117; border-radius: 12rpx; overflow: hidden; position: relative; }
+.bar .fill { height: 100%; }
+.bar .fill.red { background: linear-gradient(90deg, #b4373b, #ff6b6b); }
+.bar .fill.blue { background: linear-gradient(90deg, #2d6cf5, #4d9bff); }
+.bar .fill.green { background: linear-gradient(90deg, #1c8a3a, #6bd96b); }
+.bar > text { position: absolute; left: 12rpx; top: 0; line-height: 24rpx; font-size: 20rpx; color: white; }
