@@ -21,15 +21,28 @@ function getWs() {
 function createWs() {
   _url = app.globalData.serverUrl + '/socket';
   _manualClose = false;
-  const ws = wx.connectSocket({ url: _url, fail: (e) => console.warn('ws connect fail', e) });
+  console.log('ws connecting', _url, 'serverUrl=', app.globalData.serverUrl);
+  const ws = wx.connectSocket({
+    url: _url,
+    fail: (e) => {
+      console.warn('ws connect fail', e);
+      emit('_error', e);
+    },
+  });
+  if (!ws) {
+    console.error('wx.connectSocket returned undefined for', _url);
+    emit('_error', { errMsg: 'wx.connectSocket 返回 undefined，URL 不合法或被拒绝: ' + _url });
+    scheduleReconnect();
+    return null;
+  }
 
   ws.onOpen(() => {
     // flush queued messages
-    while (_queued.length) ws.send(_queued.shift());
+    while (_queued.length) ws.send({ data: _queued.shift() });
     // heartbeat
     if (_pingTimer) clearInterval(_pingTimer);
     _pingTimer = setInterval(() => {
-      if (ws.readyState === 1) ws.send(JSON.stringify({ t: 'ping' }));
+      if (ws.readyState === 1) ws.send({ data: JSON.stringify({ t: 'ping' }) });
     }, 10000);
     emit('_open');
   });
@@ -55,6 +68,7 @@ function createWs() {
 
   ws.onError((e) => {
     console.warn('ws error', e);
+    emit('_error', e);
   });
 
   return ws;
@@ -91,13 +105,16 @@ function once(t, fn) {
 
 function send(t, payload = {}) {
   const msg = JSON.stringify({ t, ...payload });
-  if (_ws && _ws.readyState === 1) _ws.send(msg);
+  if (_ws && _ws.readyState === 1) _ws.send({ data: msg });
   else _queued.push(msg);
 }
 
 function setServerUrl(url) {
+  if (url && !String(url).startsWith('ws://') && !String(url).startsWith('wss://')) url = 'ws://' + url;
   app.globalData.serverUrl = url;
   wx.setStorageSync('bc_server', url);
+  close();
+  _ws = createWs();
 }
 
 function close() {

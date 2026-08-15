@@ -26,8 +26,8 @@
     }
   },
   "compileType": "miniprogram",
-  "libVersion": "2.19.4",
-  "appid": "wx489f3055805b78e6",
+  "libVersion": "3.17.1",
+  "appid": "wx8aa0d79681685a51",
   "projectname": "AprilTag",
   "condition": {},
   "packOptions": {

@@ -34,6 +34,20 @@ Page({
         app2.globalData.me = m.me;
         this.setData({ joined: true, snapshot: m.snapshot, me: m.me, phase: m.snapshot.phase, err: '' });
       }),
+      ws.on('room:left', () => {
+        const app2 = getApp();
+        app2.globalData.code = null;
+        app2.globalData.me = null;
+        app2.globalData.room = null;
+        this.setData({ joined: false, snapshot: null, me: null, faction: null, role: null, phase: 'lobby', err: '' });
+      }),
+      ws.on('room:closed', (m) => {
+        const app2 = getApp();
+        app2.globalData.code = null;
+        app2.globalData.me = null;
+        app2.globalData.room = null;
+        this.setData({ joined: false, snapshot: null, me: null, faction: null, role: null, phase: 'lobby', err: m?.reason || '房间已关闭' });
+      }),
       ws.on('state', (m) => {
         const app2 = getApp();
         app2.globalData.room = m.snapshot;
@@ -50,6 +64,7 @@ Page({
         }
       }),
       ws.on('room:error', (m) => this.setData({ err: m.message })),
+      ws.on('_error', () => this.setData({ err: '无法连接服务器，请检查服务器地址与网络' })),
     ];
   },
 
@@ -79,6 +94,15 @@ Page({
     if (!name || !name.trim()) { this.setData({ err: '请输入昵称' }); return; }
     this.setData({ err: '' });
     ws.send('room:join', { code, name });
+  },
+
+  leaveRoom() {
+    wx.showModal({
+      title: '退出房间', content: '确定退出当前房间？', success: (r) => {
+        if (!r.confirm) return;
+        ws.send('room:leave');
+      },
+    });
   },
 
   onFactionTap(e) {

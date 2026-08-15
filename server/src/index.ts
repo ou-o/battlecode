@@ -7,6 +7,7 @@ import express from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
 import http from 'node:http';
 import path from 'node:path';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 import * as rooms from './rooms.js';
@@ -98,6 +99,11 @@ function sockIdOf(ws: WebSocket): string {
 }
 
 // ---- Broadcast --------------------------------------------------------
+function send(ws: WebSocket, msg: ServerMessage): void {
+  if (ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify(msg));
+}
+
 function broadcast(room: Room, msg: ServerMessage, except?: WebSocket): void {
   for (const [ws, ctx] of ctxs) {
     if (ctx.room !== room) continue;
@@ -107,21 +113,51 @@ function broadcast(room: Room, msg: ServerMessage, except?: WebSocket): void {
   }
 }
 
-function send(ws: WebSocket, msg: ServerMessage): void {
-  if (ws.readyState !== WebSocket.OPEN) return;
-  ws.send(JSON.stringify(msg));
+function broadcastRoomClosed(room: Room, reason: string): void {
+  const msg: ServerMessage = { t: 'room:closed', code: room.code, reason };
+  for (const [ws, ctx] of ctxs) {
+    if (ctx.room !== room) continue;
+    if (ws.readyState !== WebSocket.OPEN) continue;
+    ctx.room = null;
+    send(ws, msg);
+  }
 }
 
-function broadcastState(room: Room): void { broadcast(room, { t: 'state', snapshot: rooms.snapshot(room) }); }
+/** Fully dissolve a room: notify members, remove server-side state. */
+function dissolveRoom(room: Room, reason: string): void {
+  broadcastRoomClosed(room, reason);
+  rooms.closeRoom(room.code);
+}
+
+/** Push the current overview list to every console connection that has no
+ *  room attached (i.e., overview-mode consoles). */
+function pushRoomListToConsoles(): void {
+  const list = rooms.allSummaries();
+  const msg: ServerMessage = { t: 'room:list', rooms: list };
+  for (const [ws, ctx] of ctxs) {
+    if (!ctx.isConsole) continue;
+    if (ctx.room) continue;            // attached to a specific room
+    if (ws.readyState !== WebSocket.OPEN) continue;
+    send(ws, msg);
+  }
+}
+
+function broadcastState(room: Room): void { broadcast(room, { t: 'state', snapshot: rooms.snapshot(room) }); pushRoomListToConsoles(); }
 
 function onDisconnect(ctx: Ctx): void {
   const room = ctx.room;
   if (!room) return;
-  if (ctx.isConsole && room.hostSocketId === ctx.id) room.hostSocketId = null;
-  const me = room.players.get(ctx.id);
-  if (me) me.online = false;
+  rooms.disconnectSocket(ctx.id, () => room);
   broadcastState(room);
 }
+
+// ---- Idle reaper -------------------------------------------------------
+setInterval(() => {
+  const reaped = rooms.reapIdle();
+  if (reaped.length === 0) return;
+  console.log('[reap] idle rooms removed:', reaped.join(', '));
+  pushRoomListToConsoles();
+}, 60_000).unref?.();
 
 // ---- Message dispatch --------------------------------------------------
 function handle(ctx: Ctx, msg: ClientMessage): void {
@@ -145,6 +181,26 @@ function handle(ctx: Ctx, msg: ClientMessage): void {
       ctx.room = room;
       send(ws, { t: 'room:joined', snapshot: rooms.snapshot(room), me: r.me });
       broadcastState(room);
+      return;
+    }
+    case 'room:leave': {
+      const room = ctx.room;
+      if (!room) { send(ws, { t: 'room:error', message: '未加入房间' }); return; }
+      const lr = rooms.leaveRoom(room, ctx.id);
+      if (!lr.ok) { send(ws, { t: 'room:error', message: lr.message ?? '退出失败' }); return; }
+      ctx.room = null;
+      send(ws, { t: 'room:left' });
+      if (lr.roomNowEmpty) {
+        dissolveRoom(room, '最后一个玩家退出，房间关闭');
+      } else {
+        broadcastState(room);
+      }
+      return;
+    }
+    case 'room:list': {
+      // Console overview only. Player sockets are ignored.
+      if (!ctx.isConsole) { send(ws, { t: 'room:error', message: '仅控制台可用' }); return; }
+      send(ws, { t: 'room:list', rooms: rooms.allSummaries() });
       return;
     }
   }
@@ -186,13 +242,13 @@ function handle(ctx: Ctx, msg: ClientMessage): void {
     }
     case 'host:close': {
       if (room.hostSocketId !== ctx.id) { send(ws, { t: 'room:error', message: '非房主' }); return; }
-      broadcast(room, { t: 'state', snapshot: rooms.snapshot({ ...room, phase: 'ended' } as Room) });
-      rooms.closeRoom(room.code);
+      dissolveRoom(room, '房主关闭了房间');
       return;
     }
     case 'attack': {
       const out = game.resolveAttack(room, ctx.id, msg.ids);
       if (out.stateChanged) {
+        room.lastActivity = Date.now();
         for (const ev of out.events) broadcast(room, { t: 'event', e: ev.e, ts: ev.ts });
         broadcastState(room);
       }
@@ -201,6 +257,7 @@ function handle(ctx: Ctx, msg: ClientMessage): void {
     case 'respawn': {
       const r = game.respawn(room, ctx.id, msg.baseId);
       if (!r.ok) { send(ws, { t: 'room:error', message: r.message }); return; }
+      room.lastActivity = Date.now();
       const tagId = room.players.get(ctx.id)?.tagId ?? -1;
       broadcast(room, { t: 'event', e: { t: 'playerRevive', id: tagId }, ts: Date.now() });
       broadcastState(room);
@@ -211,6 +268,21 @@ function handle(ctx: Ctx, msg: ClientMessage): void {
   }
 }
 
-server.listen(PORT, () => {
-  console.log(`battlecode server listening on http://localhost:${PORT}`);
+const HOST = process.env.HOST ?? '0.0.0.0';
+server.listen(PORT, HOST, () => {
+  console.log(`battlecode server listening on http://${HOST}:${PORT}`);
+  for (const ip of lanIPs()) {
+    console.log(`  LAN: http://${ip}:${PORT}`);
+  }
 });
+
+function lanIPs(): string[] {
+  const out: string[] = [];
+  const ifaces = os.networkInterfaces();
+  for (const name of Object.keys(ifaces)) {
+    for (const inf of ifaces[name] ?? []) {
+      if (inf.family === 'IPv4' && !inf.internal) out.push(inf.address);
+    }
+  }
+  return out;
+}

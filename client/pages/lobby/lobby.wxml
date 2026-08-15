@@ -70,6 +70,7 @@
 
     <view class="bc-err" wx:if="{{err}}">{{err}}</view>
     <view class="bc-muted center" wx:if="{{me.tagId != null}}">等待房主录入掩体并开始游戏…</view>
+    <button class="bc-btn danger" bindtap="leaveRoom">退出房间</button>
   </view>
 
   <!-- binding overlay -->

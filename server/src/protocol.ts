@@ -106,6 +106,8 @@ export interface EventEnvelope {
 export type ClientMessage =
   | { t: 'room:create'; hostName: string; code?: string }
   | { t: 'room:join'; code: string; name: string }
+  | { t: 'room:leave' }
+  | { t: 'room:list' }
   | { t: 'faction'; faction: Faction }
   | { t: 'role'; role: Role }
   | { t: 'bindTag'; tagId: number }
@@ -120,10 +122,27 @@ export type ClientMessage =
 export type ServerMessage =
   | { t: 'room:created'; code: string; hostToken: string }
   | { t: 'room:joined'; snapshot: RoomSnapshot; me: PlayerSummary }
+  | { t: 'room:left' }
+  | { t: 'room:closed'; code: string; reason: string }
+  | { t: 'room:list'; rooms: RoomSummary[] }
   | { t: 'room:error'; message: string }
   | { t: 'state'; snapshot: RoomSnapshot }
   | EventEnvelope
   | { t: 'pong' };
+
+// ---- Room summary (for console overview) --------------------------------
+
+export interface RoomSummary {
+  code: string;
+  phase: Phase;
+  playerCount: number;
+  onlineCount: number;
+  hostName: string | null;
+  hasHost: boolean;
+  lastActivity: number;
+  startedAt: number | null;
+  winner: Faction | null;
+}
 
 // ---- Constants ----------------------------------------------------------
 
@@ -148,8 +167,9 @@ export const VALID_CODE_RE = /^\d{3}$/;
 // Event names used as the `{ t }` discriminator. Listed for grep-ability;
 // the union types above are the source of truth for payloads.
 export const EVENT_NAMES = [
-  'room:create', 'room:join',
-  'room:created', 'room:joined', 'room:error',
+  'room:create', 'room:join', 'room:leave', 'room:list',
+  'room:created', 'room:joined', 'room:left', 'room:closed', 'room:list',
+  'room:error',
   'faction', 'role', 'bindTag',
   'host:bunkers', 'host:start', 'host:close',
   'attack', 'respawn',

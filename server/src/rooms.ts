@@ -6,7 +6,7 @@ import {
   BUNKER_ID_MIN, BUNKER_ID_MAX, BASE_RED_ID, BASE_BLUE_ID,
   BUNKER_MAX_HP, BASE_MAX_HP,
   MAX_PLAYERS, MAX_BUNKERS, VALID_CODE_RE,
-  Role,
+  Role, RoomSummary,
 } from './protocol.js';
 
 export type { Room } from './protocol.js';
@@ -91,6 +91,47 @@ export function closeRoom(code: string): boolean {
   return true;
 }
 
+// ---- Leave / explicit exit ----------------------------------------------
+
+export interface LeaveResult {
+  ok: boolean;
+  message?: string;
+  removedPlayer?: PlayerSummary;
+  newHostSocketId?: string | null;
+  roomNowEmpty: boolean;
+  room: Room | undefined;
+}
+
+export function leaveRoom(room: Room, socketId: string): LeaveResult {
+  const me = room.players.get(socketId);
+  if (!me) return { ok: false, message: '未加入房间', roomNowEmpty: false, room };
+  // Unbind this player's tag unit (if any).
+  for (const u of [...room.units.values()]) {
+    if (u.kind === 'player' && u.socketId === socketId) {
+      room.units.delete(u.id);
+      room.stats.delete(u.id);
+    }
+  }
+  room.players.delete(socketId);
+  room.lastActivity = Date.now();
+  // Host handoff: pick first remaining online player, else null.
+  let newHost: string | null = null;
+  if (room.hostSocketId === socketId) {
+    const next = [...room.players.values()].find(p => p.online);
+    newHost = next ? next.socketId : null;
+    room.hostSocketId = newHost;
+  } else {
+    newHost = room.hostSocketId;
+  }
+  return {
+    ok: true,
+    removedPlayer: me,
+    newHostSocketId: newHost,
+    roomNowEmpty: room.players.size === 0,
+    room,
+  };
+}
+
 export function joinRoom(room: Room, socketId: string, name: string): { ok: true; me: PlayerSummary } | { ok: false; message: string } {
   if (room.players.size >= MAX_PLAYERS && !room.players.has(socketId)) {
     return { ok: false, message: '房间已满（上限 ' + MAX_PLAYERS + ' 人）' };
@@ -120,7 +161,31 @@ export function disconnectSocket(socketId: string, roomOf: (socketId: string) =>
   if (room.hostSocketId === socketId) {
     room.hostSocketId = null;  // console must re-attach with hostToken
   }
+  room.lastActivity = Date.now();
   return room;
+}
+
+export function onlineCount(room: Room): number {
+  let n = 0;
+  for (const p of room.players.values()) if (p.online) n++;
+  return n;
+}
+
+export const IDLE_ROOM_MS = 30 * 60 * 1000;        // 30 min if active players
+export const EMPTY_ONLINE_MS = 2 * 60 * 1000;      // 2 min if no online players
+
+/** Returns codes of rooms reaped. */
+export function reapIdle(now = Date.now()): string[] {
+  const reaped: string[] = [];
+  for (const [code, r] of rooms) {
+    const vacant = onlineCount(r) === 0;
+    const limit = vacant ? EMPTY_ONLINE_MS : IDLE_ROOM_MS;
+    if (now - r.lastActivity > limit) {
+      rooms.delete(code);
+      reaped.push(code);
+    }
+  }
+  return reaped;
 }
 
 export function addBunkers(room: Room, ids: number[]): { ok: true } | { ok: false; message: string } {
@@ -163,6 +228,32 @@ export function snapshot(room: Room): RoomSnapshot {
     startedAt: room.startedAt,
   };
 }
+
+export function summarize(room: Room): RoomSummary {
+  const players = [...room.players.values()];
+  let hostName: string | null = null;
+  if (room.hostSocketId) {
+    const hp = room.players.get(room.hostSocketId);
+    if (hp) hostName = hp.name;
+  }
+  return {
+    code: room.code,
+    phase: room.phase,
+    playerCount: players.length,
+    onlineCount: players.filter(p => p.online).length,
+    hostName,
+    hasHost: room.hostSocketId !== null,
+    lastActivity: room.lastActivity,
+    startedAt: room.startedAt,
+    winner: room.winner,
+  };
+}
+
+export function allSummaries(): RoomSummary[] {
+  return [...rooms.values()].map(summarize).sort((a, b) => b.lastActivity - a.lastActivity);
+}
+
+// ---- Idle reaping (defined above near disconnectSocket) -----------------
 
 export function ensureStatsFor(room: Room, unit: Unit): void {
   if (unit.kind !== 'player') return;

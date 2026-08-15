@@ -60,6 +60,10 @@ Page({
       ws.on('state', (m) => this._onState(m.snapshot, app)),
       ws.on('event', (m) => this._onEvent(m)),
       ws.on('room:error', (m) => wx.showToast({ title: m.message, icon: 'none' })),
+      ws.on('room:closed', (m) => {
+        wx.showToast({ title: m?.reason || '房间已关闭', icon: 'none', duration: 2000 });
+        setTimeout(() => wx.reLaunch({ url: '/pages/lobby/lobby' }), 1500);
+      }),
     ];
     // Kick the UI once with the cached snapshot.
     if (app.globalData.room) this._onState(app.globalData.room, app);
@@ -83,12 +87,22 @@ Page({
 
   // ---- WASM worker setup (25h9 fixed) -----
   _initWorker() {
+    console.log('canIUse createWorker:', wx.canIUse('createWorker'), '| app.json workers dir configured');
+    let w;
     try {
-      this._worker = wx.createWorker('workers/detect.js');
+      w = wx.createWorker('workers/detect.js');
+      console.log('createWorker("workers/detect.js") =>', w, 'type=', typeof w);
     } catch (e) {
+      console.warn('createWorker threw', e);
       this.setData({ statusText: 'Worker 创建失败: ' + e.message });
       return;
     }
+    if (!w) {
+      console.warn('createWorker returned undefined/null — worker path not registered');
+      this.setData({ statusText: 'Worker 未注册，请确认 app.json 的 workers 字段后重新编译' });
+      return;
+    }
+    this._worker = w;
     this._worker.onMessage((res) => {
       this._workerBusy = false;
       if (res.type === 'ready') {
