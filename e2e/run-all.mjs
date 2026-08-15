@@ -2,11 +2,24 @@
 // as a player via mp.evaluate (page-method invocation), because page-level
 // element/tap RPC hangs on this DevTools build while app-level evaluate works.
 // A Node ws harness acts as host (/console) + extra combatants (/socket).
+//
+// DevTools lifecycle:
+//   1. The IDE must already be running and exposing its HTTP API. We talk to
+//      it via the WeChat "HTTP V2" interface on port <HTTP_PORT> (33287 unless
+//      overridden by the BC_HTTP_PORT env var): /v2/open refreshes/opens the
+//      client project.
+//   2. `cli auto --auto-port <port> --project <path>` enabled against that IDE
+//      (we pass `--port <HTTP_PORT>` so it reuses the existing IDE). The
+//      resulting automator WS on <autoPort> is what miniprogram-automator
+//      connects to.
 import automator from 'miniprogram-automator';
+import http from 'http';
 import { connect, SERVER, assert, sleep } from './lib/ws.mjs';
 
 const CLI = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli';
 const PROJECT = '/Users/ruihanzhang/GitHub/battlecode/client';
+const HTTP_PORT = Number(process.env.BC_HTTP_PORT || 33287);
+const AUTO_PORT = Number(process.env.BC_AUTO_PORT || 9426);
 const TAG_ME = 5, TAG_BOB = 1, TAG_CAROL = 2;
 const BUNKERS = [24, 25];
 const BASE_RED = 34, BASE_BLUE = 35;
@@ -34,6 +47,33 @@ async function waitForServer() {
   for (let i = 0; i < 30; i++) { try { const h = await connect(SERVER + '/socket'); h.close(); return; } catch { await sleep(500); } }
   fail('server unreachable');
 }
+
+// HTTP V2 helper — talks to the WeChat devtools HTTP server on HTTP_PORT.
+function httpGet(path) {
+  return new Promise((resolve, reject) => {
+    const req = http.get({ host: '127.0.0.1', port: HTTP_PORT, path }, (res) => {
+      let body = ''; res.on('data', (d) => body += d); res.on('end', () => resolve({ status: res.statusCode, body }));
+    });
+    req.on('error', reject); req.setTimeout(60000, () => req.destroy(new Error('http timeout')));
+  });
+}
+async function waitForHttpApi() {
+  for (let i = 0; i < 60; i++) {
+    try { const r = await httpGet('/v2/islogin'); if (r.status === 200) return; } catch {}
+    await sleep(500);
+  }
+  fail('devtools HTTP API not reachable on : ' + HTTP_PORT);
+}
+async function openProjectViaHttp() {
+  // Reset to a clean project window: close first (also frees any automator WS
+  // that a previous run may have left bound), then open. /v2/close has a 3s
+  // confirm grace, so we let it settle.
+  try { await httpGet('/v2/close?project=' + encodeURIComponent(PROJECT)); } catch {}
+  await sleep(5000);
+  const r = await httpGet('/v2/open?project=' + encodeURIComponent(PROJECT));
+  if (r.status !== 200) fail('HTTP /v2/open failed status=' + r.status + ' body=' + r.body);
+  log('HTTP /v2/close+/v2/open ok (' + r.status + ')');
+}
 const makeHost = () => connect(SERVER + '/console');
 async function makePlayer({ code, name, faction, role, tagId }) {
   const p = await connect(SERVER + '/socket');
@@ -50,8 +90,10 @@ async function makePlayer({ code, name, faction, role, tagId }) {
 
 (async () => {
   set('server'); await waitForServer(); log('up');
+  set('http-api'); await waitForHttpApi(); log('devtools HTTP API up on ' + HTTP_PORT);
   set('launch');
-  mp = await automator.launch({ cliPath: CLI, projectPath: PROJECT, wsPort: 9426, timeout: 120000 });
+  await openProjectViaHttp();
+  mp = await automator.launch({ cliPath: CLI, projectPath: PROJECT, wsPort: AUTO_PORT, args: ['--port', String(HTTP_PORT)], trustProject: true, timeout: 120000 });
   log('launched'); await sleep(2500);
   if (!(await waitForPath('pages/lobby/lobby', 8000))) fail('lobby not loaded');
   log('lobby loaded');
@@ -171,8 +213,12 @@ async function makePlayer({ code, name, faction, role, tagId }) {
   log('GAME OVER ' + d.winnerText);
 
   set('result');
-  await ev(() => { const ps = getCurrentPages(); ps[ps.length - 1].returnToResult(); });
-  if (!(await waitForPath('pages/result/result', 6000))) fail('not result page');
+  const redErr = await ev(() => { try { const ps = getCurrentPages(); ps[ps.length - 1].returnToResult(); return 'ok'; } catch (e) { return 'ERR:' + (e && e.message); } });
+  if (redErr !== 'ok') fail('returnToResult threw: ' + redErr);
+  if (!(await waitForPath('pages/result/result', 8000))) {
+    const pp = await ev(() => getCurrentPages().map((p) => p.route));
+    fail('not result page; current=' + JSON.stringify(pp));
+  }
   d = await pageData(); assert(d.snapshot && d.stats && d.stats.length > 0, 'stats');
   assert(d.winnerText.indexOf('红方') === 0, 'result winner red');
   log('result stats=' + d.stats.length);
