@@ -7,6 +7,12 @@ npm-debug.log*
 # ---- Build cache ----
 .build/
 
+# ---- AI agent config (local only) ----
+AGENTS.md
+**/AGENTS.md
+Design.md
+**/Design.md
+
 # ---- OS / Editor ----
 .DS_Store
 .vscode/
