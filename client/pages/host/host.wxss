@@ -1,13 +1,8 @@
 .page { padding: 24rpx; }
 .bc-title { font-size: 44rpx; font-weight: 700; margin: 24rpx 0; }
+.bc-muted { color: #7d8696; font-size: 26rpx; margin: 12rpx 0; }
+.bc-card { background: #181c26; padding: 24rpx; border-radius: 12rpx; margin: 18rpx 0; }
 .sec-title { font-size: 26rpx; color: #9aa6bd; margin-bottom: 16rpx; }
-.player-list { display: flex; flex-direction: column; gap: 12rpx; }
-.player-row, .base-row { display: flex; align-items: center; gap: 12rpx; font-size: 26rpx; flex-wrap: wrap; }
-.dot { width: 16rpx; height: 16rpx; border-radius: 50%; display: inline-block; }
-.dot.on { background: #6bd96b; }
-.dot.off { background: #42485a; }
-.nm { flex: 1; }
-.token { font-family: ui-monospace, Menlo, monospace; font-size: 22rpx; word-break: break-all; }
-.tag { background: #2a3142; padding: 4rpx 12rpx; border-radius: 6rpx; font-size: 22rpx; margin: 4rpx; }
-.tag.dstr { background: #3a2a2a; color: #ff6b6b; }
-.pill-row { display: flex; flex-wrap: wrap; }
+.token-row { display: flex; align-items: flex-start; gap: 12rpx; }
+.token { font-family: ui-monospace, Menlo, monospace; font-size: 22rpx; word-break: break-all; flex: 1; background: #0c0e14; padding: 12rpx; border-radius: 8rpx; }
+.bc-btn.small { width: auto; padding: 10rpx 20rpx; font-size: 22rpx; margin: 0; }

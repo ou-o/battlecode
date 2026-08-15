@@ -23,8 +23,16 @@ const PORT = parseInt(process.env.PORT ?? '3000', 10);
 
 const app = express();
 app.use(express.json());
-app.use(express.static(WEB_DIR));
 app.get('/healthz', (_req, res) => res.json({ ok: true, rooms: rooms.allRooms().length }));
+// Room detail page — serve room.html with a friendly URL; code is validated
+// server-side to give a 404 for unknown rooms (only when token is missing? no,
+// we serve the page regardless; the front-end JS connects via /console and
+// surfaces errors). We still want to NOT serve for non 3-digit codes.
+app.get('/room/:code', (req, res, next) => {
+  if (!/^\d{3}$/.test(req.params.code)) return next();
+  res.sendFile(path.join(WEB_DIR, 'room.html'));
+});
+app.use(express.static(WEB_DIR));
 
 const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true });
@@ -123,10 +131,12 @@ function broadcastRoomClosed(room: Room, reason: string): void {
   }
 }
 
-/** Fully dissolve a room: notify members, remove server-side state. */
+/** Fully dissolve a room: notify members, remove server-side state, push
+ *  updated overview list to all overview-mode consoles. */
 function dissolveRoom(room: Room, reason: string): void {
   broadcastRoomClosed(room, reason);
   rooms.closeRoom(room.code);
+  pushRoomListToConsoles();
 }
 
 /** Push the current overview list to every console connection that has no
