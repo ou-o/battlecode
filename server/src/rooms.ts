@@ -43,7 +43,7 @@ function newStats(id: number, name: string, faction: Faction, role: Role): Playe
 
 // ---- Public API ---------------------------------------------------------
 
-export function createRoom(_hostName: string, codeHint?: string): { room: Room; ok: true } | { ok: false; message: string } {
+export function createRoom(hostName: string, codeHint?: string): { room: Room; ok: true } | { ok: false; message: string } {
   let code: string;
   if (codeHint) {
     if (!VALID_CODE_RE.test(codeHint)) return { ok: false, message: '房间号必须为三位数字' };
@@ -63,6 +63,7 @@ export function createRoom(_hostName: string, codeHint?: string): { room: Room; 
     code,
     hostSocketId: null,
     hostToken: genHostToken(),
+    hostName: hostName || null,
     phase: 'lobby',
     units: new Map(),
     players: new Map(),
@@ -231,8 +232,8 @@ export function snapshot(room: Room): RoomSnapshot {
 
 export function summarize(room: Room): RoomSummary {
   const players = [...room.players.values()];
-  let hostName: string | null = null;
-  if (room.hostSocketId) {
+  let hostName: string | null = room.hostName;
+  if (!hostName && room.hostSocketId) {
     const hp = room.players.get(room.hostSocketId);
     if (hp) hostName = hp.name;
   }

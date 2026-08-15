@@ -9,6 +9,33 @@
 <body>
 <div id="setup">
   <h1>BattleCode 房主控制台</h1>
+
+  <!-- 全局总览 -->
+  <section id="overview">
+    <h2>当前房间总览</h2>
+    <p class="muted">每 2 秒刷新一次。可直接看到所有 online 房间。点「进入」需要 hostToken 重连。</p>
+    <button id="btnRefreshRooms">手动刷新</button>
+    <table id="roomsTable" class="rooms">
+      <thead>
+        <tr>
+          <th>房间号</th>
+          <th>阶段</th>
+          <th>玩家</th>
+          <th>在线</th>
+          <th>房主</th>
+          <th>连接</th>
+          <th>最近活动</th>
+          <th>开始时间</th>
+          <th>胜方</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p class="muted" id="ovEmpty">无房间</p>
+  </section>
+
+  <hr/>
   <p class="muted">建房或重连已有房间。房主 token 在建房后只显示一次。</p>
   <div class="row">
     <label>房主名 <input id="hostName" placeholder="房主昵称"></label>
@@ -24,6 +51,7 @@
     <button id="btnReconnect">重连</button>
   </div>
   <p class="muted" id="setupErr"></p>
+  <button id="btnBackToList">返回总览</button>
 </div>
 
 <div id="panel" hidden>

@@ -1,5 +1,6 @@
 // web/console.js — host web console logic. Connects to /console with the
 // hostToken (auto-created or supplied), drives room/create + bunkers + start.
+// Overview mode: connect without code/token and poll room:list.
 
 const $ = (id) => document.getElementById(id);
 const ENVELOPE = (t, p) => JSON.stringify({ t, ...p });
@@ -8,6 +9,58 @@ let ws = null;
 let code = null;
 let token = null;
 let snapshot = null;
+let pollTimer = null;
+
+// ---------- overview-mode console --------------------------------------
+function connectOverview() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}/console`);
+  ws.onopen = () => {
+    send('room:list');
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(() => { if (ws && ws.readyState === 1) send('room:list'); }, 2000);
+  };
+  ws.onmessage = (ev) => onServer(JSON.parse(ev.data));
+  ws.onclose = () => {
+    if (pollTimer) clearInterval(pollTimer);
+    setTimeout(() => { if (!code && !token) connectOverview(); }, 1500);
+  };
+  ws.onerror = () => {};
+}
+
+function renderOverview(rooms) {
+  const tbody = $('roomsTable').querySelector('tbody');
+  tbody.innerHTML = '';
+  $('ovEmpty').hidden = rooms.length > 0;
+  if (!rooms.length) return;
+  const now = Date.now();
+  for (const r of rooms) {
+    const tr = document.createElement('tr');
+    const age = Math.max(0, Math.round((now - r.lastActivity) / 1000));
+    const ageTxt = age < 60 ? `${age}s` : `${Math.round(age / 60)}m`;
+    const started = r.startedAt ? new Date(r.startedAt).toLocaleTimeString() : '-';
+    tr.innerHTML = `
+      <td><b>${esc(r.code)}</b></td>
+      <td>${PHASE_CN[r.phase] ?? r.phase}</td>
+      <td>${r.playerCount}</td>
+      <td>${r.onlineCount}</td>
+      <td>${esc(r.hostName ?? '-')}${r.hasHost ? '' : ' <span class="muted">(离线)</span>'}</td>
+      <td>${r.hasHost ? '✓' : '—'}</td>
+      <td>${ageTxt}</td>
+      <td>${started}</td>
+      <td>${r.winner ?? '-'}</td>
+      <td><button class="enterBtn" data-code="${esc(r.code)}">进入</button>
+          <button class="joinBtn" data-code="${esc(r.code)}">以玩家身份进入</button></td>
+    `;
+    tbody.appendChild(tr);
+  }
+  for (const b of tbody.querySelectorAll('.enterBtn')) {
+    b.onclick = () => { $('reconnectCode').value = b.dataset.code; $('reconnectToken').focus(); };
+  }
+  for (const b of tbody.querySelectorAll('.joinBtn')) {
+    b.onclick = () => { alert(`请提示玩家从微信小程序用房间号 ${b.dataset.code} 加入。`); };
+  }
+}
 
 function connect(path) {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -29,6 +82,9 @@ function send(t, p = {}) { if (ws && ws.readyState === 1) ws.send(ENVELOPE(t, p)
 
 function onServer(m) {
   switch (m.t) {
+    case 'room:list':
+      renderOverview(m.rooms);
+      break;
     case 'room:created':
       code = m.code; token = m.hostToken;
       $('code').textContent = code;
@@ -45,6 +101,14 @@ function onServer(m) {
     case 'event':
       appendEvent(m);
       break;
+    case 'room:closed':
+      alert(`房间 ${m.code} 已关闭：${m.reason}`);
+      // back to overview
+      $('setup').hidden = false;
+      $('panel').hidden = true;
+      code = null; token = null;
+      connectOverview();
+      break;
     case 'room:error':
       $('setupErr').textContent = m.message;
       alert(m.message);
@@ -56,6 +120,8 @@ function onServer(m) {
 $('btnCreate').onclick = () => {
   const hostName = $('hostName').value.trim() || '房主';
   const codeHint = $('codeHint').value.trim() || undefined;
+  if (ws) { try { ws.close(); } catch (e) {} }
+  if (pollTimer) clearInterval(pollTimer);
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(`${proto}//${location.host}/console`);
   ws.onopen = () => send('room:create', { hostName, code: codeHint });
@@ -63,16 +129,24 @@ $('btnCreate').onclick = () => {
   ws.onclose = () => {
     console.warn('ws closed; retry in 1s');
     if (code && token) setTimeout(() => connect(`/console?code=${code}&token=${token}`), 1000);
+    else if (!code) setTimeout(connectOverview, 1500);
   };
+  ws.onerror = () => {};
 };
 
 $('btnReconnect').onclick = () => {
   code = $('reconnectCode').value.trim();
   token = $('reconnectToken').value.trim();
   if (!/^\d{3}$/.test(code)) { $('setupErr').textContent = '房间号需为三位数字'; return; }
+  if (!token) { $('setupErr').textContent = '请填写 hostToken'; return; }
+  if (ws) { try { ws.close(); } catch (e) {} }
+  if (pollTimer) clearInterval(pollTimer);
+  $('setupErr').textContent = '';
   connect(`/console?code=${code}&token=${token}`);
   enterPanel();
 };
+
+$('btnRefreshRooms').onclick = () => { if (ws && ws.readyState === 1) send('room:list'); };
 
 $('btnBindBunkers').onclick = () => {
   const raw = $('bunkerIds').value.trim();
@@ -83,6 +157,9 @@ $('btnBindBunkers').onclick = () => {
 
 $('btnStart').onclick = () => send('host:start');
 $('btnClose').onclick = () => { if (confirm('关闭房间？')) send('host:close'); };
+
+// Start in overview mode on page load.
+connectOverview();
 
 function enterPanel() { $('setup').hidden = true; $('panel').hidden = false; }
 

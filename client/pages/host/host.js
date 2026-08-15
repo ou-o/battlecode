@@ -41,6 +41,13 @@ Page({
           wx.redirectTo({ url: '/pages/result/result' });
         }
       }),
+      ws.on('room:closed', (m) => {
+        const app2 = getApp();
+        app2.globalData.code = null;
+        app2.globalData.hostToken = null;
+        app2.globalData.isHost = false;
+        this.setData({ created: false, snapshot: null, code: '', hostToken: '', err: m?.reason || '房间已关闭' });
+      }),
       ws.on('room:error', (m) => this.setData({ err: m.message })),
     ];
   },

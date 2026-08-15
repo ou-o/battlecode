@@ -10,8 +10,14 @@ button:hover { filter: brightness(1.1); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 button.danger { background: #b4373b; }
 .spacer { flex: 1; }
-#setup { max-width: 640px; margin: 60px auto; }
-h1 { font-size: 18px; }
+#setup { max-width: 960px; margin: 40px auto; }
+#overview { background: #181c26; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+#ovEmpty { color: #7d8696; padding: 6px 0; }
+table.rooms th, table.rooms td { font-size: 12px; padding: 4px 6px; }
+table.rooms td button { padding: 4px 8px; font-size: 12px; margin-right: 4px; }
+.enterBtn { background: #2d6cf5; }
+.joinBtn { background: #444c5e; }
+h1 { font-size: 22px; }
 h2 { font-size: 14px; color: #9aa6bd; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
 
 #panel { display: grid; grid-template-columns: 1fr 380px; gap: 16px; padding: 12px 16px; }

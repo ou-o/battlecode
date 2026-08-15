@@ -53,6 +53,7 @@ export interface Room {
   code: string;
   hostSocketId: string | null;
   hostToken: string;
+  hostName: string | null;
   phase: Phase;
   units: Map<number, Unit>;
   players: Map<string, PlayerSummary>;
