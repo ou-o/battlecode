@@ -60,7 +60,15 @@ Page({
         }
         if (phase2 === 'ended' && prevPhase !== 'ended' && !this._goneToResult) {
           this._goneToResult = true;
-          wx.redirectTo({ url: '/pages/result/result' });
+          // Only auto-advance to the result page when the player is actually
+          // viewing the lobby (e.g. an unbound spectator). If the battle page
+          // is on top, let it show its own end overlay (with the 查看结算 button)
+          // — otherwise lobby would hijack navigation and the overlay never shows.
+          const ps = getCurrentPages();
+          const top = ps[ps.length - 1];
+          if (top && top.route === 'pages/lobby/lobby') {
+            wx.redirectTo({ url: '/pages/result/result' });
+          }
         }
       }),
       ws.on('room:error', (m) => this.setData({ err: m.message })),

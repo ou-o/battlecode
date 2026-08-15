@@ -63,7 +63,9 @@ function createWs() {
   ws.onClose(() => {
     if (_pingTimer) clearInterval(_pingTimer);
     emit('_close');
-    if (!_manualClose) scheduleReconnect();
+    // Only reconnect if this is still the active socket AND not a manual close.
+    // An orphaned socket (superseded by setServerUrl) must NOT steal the singleton.
+    if (ws === _ws && !_manualClose) scheduleReconnect();
   });
 
   ws.onError((e) => {
@@ -120,7 +122,9 @@ function setServerUrl(url) {
 function close() {
   _manualClose = true;
   if (_pingTimer) clearInterval(_pingTimer);
-  if (_ws && _ws.readyState === 1) _ws.close({ code: 1000 });
+  // Force-close regardless of readyState so a still-connecting orphan can't
+  // linger and later steal the singleton via scheduleReconnect.
+  if (_ws) { try { _ws.close({ code: 1000 }); } catch (e) {} }
   _ws = null;
 }
 
