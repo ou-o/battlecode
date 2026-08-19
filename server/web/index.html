@@ -3,52 +3,125 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>BattleCode 控制台 · 房间总览</title>
-<link rel="stylesheet" href="console.css" />
+<title>BattleCode · 实物 MOBA 对战</title>
+<style>
+  :root {
+    --bg: #0f1420; --panel: #1a2130; --panel2: #222b3d;
+    --fg: #e6ebf5; --muted: #8b96ab; --line: #2e3a52;
+    --red: #ff5b5b; --blue: #4da3ff; --accent: #ffd166;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: linear-gradient(160deg, var(--bg), #141b2e 60%, #1a2035);
+    color: var(--fg); min-height: 100vh; line-height: 1.6;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 48px 24px 80px; }
+  header.hero { text-align: center; padding: 30px 0 40px; }
+  .logo {
+    display: inline-block; font-size: 46px; font-weight: 800; letter-spacing: 2px;
+    background: linear-gradient(90deg, var(--red), var(--accent), var(--blue));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .tagline { color: var(--muted); font-size: 16px; margin-top: 8px; }
+  .cta {
+    display: inline-block; margin-top: 28px; padding: 14px 40px; font-size: 18px;
+    background: linear-gradient(90deg, var(--red), var(--accent));
+    color: #14161c; font-weight: 700; border-radius: 40px; text-decoration: none;
+    box-shadow: 0 6px 24px rgba(255,110,90,.35); transition: transform .15s;
+  }
+  .cta:hover { transform: translateY(-2px); }
+  .cta small { display: block; font-weight: 400; font-size: 12px; opacity: .75; margin-top: 2px; }
+  section.card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 26px 30px; margin: 22px 0;
+  }
+  section.card h2 { font-size: 20px; margin-bottom: 14px; color: var(--accent);
+    display: flex; align-items: center; gap: 10px; }
+  section.card h2 .n {
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
+    width: 30px; height: 30px; display: inline-flex; align-items: center;
+    justify-content: center; font-size: 15px; color: var(--fg);
+  }
+  p { color: var(--fg); margin-bottom: 10px; }
+  p.muted { color: var(--muted); }
+  ol.steps { padding-left: 22px; }
+  ol.steps li { margin: 8px 0; color: var(--fg); }
+  ol.steps strong { color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; }
+  th { background: var(--panel2); color: var(--muted); font-weight: 600; }
+  .roles { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 12px; }
+  .role { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .role b { color: var(--accent); }
+  .role span.dim { color: var(--muted); font-size: 13px; display: block; margin-top: 4px; }
+  .tag { display:inline-block; background: var(--panel2); border:1px solid var(--line); border-radius:6px; padding:2px 8px; font-size:13px; margin:2px; color:var(--muted); }
+  footer { text-align:center; color: var(--muted); font-size: 13px; padding-top: 20px; }
+  .divider { height:1px; background: var(--line); margin: 6px 0 14px; }
+</style>
 </head>
-<body class="page-list">
-  <header>
-    <h1>BattleCode 房间总览</h1>
-    <span class="spacer"></span>
-    <button id="btnRefreshRooms">刷新</button>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="logo">BATTLECODE</div>
+    <div class="tagline">基于 AprilTag 25h9 的实物 MOBA 对战 —— 用摄像头识别标签，真人实时开战</div>
+    <a class="cta" href="/hall.html">进入游戏大厅<small>房间总览 · 建房 · 观察对局</small></a>
   </header>
 
-  <main>
-    <section>
-      <h2>所有房间（每 2 秒自动刷新）</h2>
-      <table id="roomsTable" class="rooms">
-        <thead>
-          <tr>
-            <th>房间号</th>
-            <th>阶段</th>
-            <th>玩家</th>
-            <th>在线</th>
-            <th>房主</th>
-            <th>连接</th>
-            <th>最近活动</th>
-            <th>开始时间</th>
-            <th>胜方</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <p id="ovEmpty" class="muted">无房间</p>
-    </section>
+  <section class="card">
+    <h2><span class="n">1</span> 这是什么</h2>
+    <p>BattleCode 是一款把<b>实体标签 + 摄像头识别 + 实时对战</b>结合起来的类 MOBA 游戏。
+    玩家通过微信小程序用摄像头识别印有 <span class="tag">AprilTag 25h9</span> 的实体标签，
+    将识别结果实时上报给服务端，服务端完成血量结算、阵亡复活、掩体摧毁与基地胜负判定。</p>
+    <p class="muted">核心玩法：识别自己的标签 ≈ 操作角色，把识别到的对手标签上报 ≈ 发动攻击。</p>
+  </section>
 
-    <section class="new-room">
-      <h2>新建房间</h2>
-      <div class="row">
-        <label>房主名 <input id="hostName" placeholder="房主昵称"></label>
-        <label>自选房间号（三位数字，可空随机）
-          <input id="codeHint" placeholder="如 365" maxlength="3" pattern="\d{3}">
-        </label>
-        <button id="btnCreate">创建并进入</button>
-      </div>
-      <p class="muted" id="setupErr"></p>
-    </section>
-  </main>
+  <section class="card">
+    <h2><span class="n">2</span> 玩法流程</h2>
+    <ol class="steps">
+      <li><strong>建房：</strong>房主进入大厅，填写昵称并选择一个三位房间号，创建对局。</li>
+      <li><strong>加入：</strong>玩家在微信小程序输入房间号加入，选择阵营（红 / 蓝）与角色。</li>
+      <li><strong>绑标签：</strong>用摄像头识别自己的 25h9 标签，绑定到游戏内 ID（0–23）。</li>
+      <li><strong>布防：</strong>房主录入掩体标签（24–33），然后点击「开始游戏」。</li>
+      <li><strong>开战：</strong>玩家进入战斗页，摄像头识别 + 点击攻击，将识别到的对手 ID 上报，服务端为每个被击目标扣除 10 点血量。</li>
+      <li><strong>胜负：</strong>击毁对方基地（500 HP）即获胜；己方基地被毁即失败。</li>
+    </ol>
+  </section>
 
-  <script src="console.js"></script>
+  <section class="card">
+    <h2><span class="n">3</span> 角色</h2>
+    <div class="roles">
+      <div class="role"><b>突击兵</b> <span class="dim">正面推进，近身输出主力</span></div>
+      <div class="role"><b>工程师</b> <span class="dim">坚守与支援（技能特性开发中）</span></div>
+      <div class="role"><b>狙击手</b> <span class="dim">远程点杀（技能特性开发中）</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="n">4</span> 核心数值</h2>
+    <table>
+      <tr><th>项目</th><th>默认值</th><th>说明</th></tr>
+      <tr><td>单次攻击伤害</td><td>10</td><td>每次上报识别到对手 ID 即造成 10 点伤害</td></tr>
+      <tr><td>玩家 HP</td><td>100</td><td>约 4 次被击阵亡</td></tr>
+      <tr><td>掩体 HP</td><td>50</td><td>被击 5 次一次性摧毁，本局不重生</td></tr>
+      <tr><td>基地 HP</td><td>500</td><td>被击 50 次陷落，决定胜负</td></tr>
+      <tr><td>复活等待</td><td>30 秒</td><td>阵亡后到本方基地（id 34 红 / 35 蓝）拍标签复活</td></tr>
+      <tr><td>玩家 ID</td><td>0–23</td><td>最多 12 名玩家</td></tr>
+      <tr><td>掩体 ID</td><td>24–33</td><td>最多 10 个掩体</td></tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2><span class="n">5</span> 如何游玩</h2>
+    <p><strong>房主：</strong>进入大厅建房并录掩体、开始游戏，即可在房间页实时观察战斗。</p>
+    <p><strong>玩家：</strong>使用微信开发者工具打开 <span class="tag">client/</span> 目录（AprilTag wasm 已预编译），
+    在小程序端「加入对局」页输入房间号加入。</p>
+    <p class="muted">浏览器端点仅供房主观察与指挥；玩家的实际对战操作发生在微信小程序端。</p>
+    <div class="divider"></div>
+    <a class="cta" href="/hall.html">进入游戏大厅 →</a>
+  </section>
+
+  <footer>BattleCode · Node.js + WebSocket 实时对战服务端</footer>
+</div>
 </body>
 </html>

@@ -49,7 +49,7 @@ function onServer(m) {
       break;
     case 'room:closed':
       alert(`房间 ${m.code} 已关闭：${m.reason}`);
-      location.href = '/';
+      location.href = '/hall.html';
       break;
     case 'room:error':
       $('errText').textContent = m.message;

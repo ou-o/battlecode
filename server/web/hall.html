@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>BattleCode 控制台 · 房间总览</title>
+<link rel="stylesheet" href="console.css" />
+</head>
+<body class="page-list">
+  <header>
+    <h1>BattleCode 房间总览</h1>
+    <span class="spacer"></span>
+    <button id="btnRefreshRooms">刷新</button>
+  </header>
+
+  <main>
+    <section>
+      <h2>所有房间（每 2 秒自动刷新）</h2>
+      <table id="roomsTable" class="rooms">
+        <thead>
+          <tr>
+            <th>房间号</th>
+            <th>阶段</th>
+            <th>玩家</th>
+            <th>在线</th>
+            <th>房主</th>
+            <th>连接</th>
+            <th>最近活动</th>
+            <th>开始时间</th>
+            <th>胜方</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p id="ovEmpty" class="muted">无房间</p>
+    </section>
+
+    <section class="new-room">
+      <h2>新建房间</h2>
+      <div class="row">
+        <label>房主名 <input id="hostName" placeholder="房主昵称"></label>
+        <label>自选房间号（三位数字，可空随机）
+          <input id="codeHint" placeholder="如 365" maxlength="3" pattern="\d{3}">
+        </label>
+        <button id="btnCreate">创建并进入</button>
+      </div>
+      <p class="muted" id="setupErr"></p>
+    </section>
+  </main>
+
+  <script src="console.js"></script>
+</body>
+</html>
