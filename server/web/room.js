@@ -1,7 +1,8 @@
 // web/room.js — 房间页（房主控制台）。
-// 从 /room/:code 读取房间号；从 URL ?token= 或 localStorage 读取房主 TOKEN。
-// 口令 + TOKEN 经 /console (pw + code + token) 由服务端校验；通过后展示实时状态。
-// 顶部展示房主 TOKEN，提供「复制重进链接」/「复制 TOKEN」按钮，供房主保存以便重进房间。
+// 从 /room/:code 读取房间号；从 URL ?token= 或 localStorage 读取房主 6 位验证码。
+// 口令已在大厅输入并保存在 localStorage('bc_console_pw')，无需在此重复输入。
+// 无验证码时跳转 /gate/:code 校验页输入；带码则经 /console (pw+code+token) 连接展示。
+// 顶部展示重进验证码，提供「复制验证码」按钮，供房主保存以便重进。
 
 const $ = (id) => document.getElementById(id);
 const ENVELOPE = (t, p) => JSON.stringify({ t, ...p });
@@ -9,7 +10,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 })[c]);
 
-const PHASE_CN = { lobby: '大厅', binding: '绑定中', armed: '就绪', playing: '对战中', ended: '已结束' };
+const PHASE_CN = { lobby: '准备', binding: '绑定中', armed: '就绪', playing: '对战中', ended: '已结束' };
 const ROLE_CN = { assault: '突击兵', engineer: '工程师', sniper: '狙击手' };
 const FAC_CN = { red: '红', blue: '蓝' };
 
@@ -24,58 +25,52 @@ const TOKEN_KEY = (c) => `bc_room_${c}_token`;
 
 let ws = null;
 let closed = false;          // true：收到 room:closed 后停止重连
-let wsConnectedOnce = false;
 let pw = '';
 let token = '';
 
 function main() {
-  $('gateCode').textContent = /^\d{3}$/.test(code) ? code : '—';
+  const valid = /^\d{3}$/.test(code);
 
-  if (!/^\d{3}$/.test(code)) {
-    $('gateErr').textContent = '房间号不合法（需三位数字）';
-    $('pwInput').disabled = true;
-    $('tokenInput').disabled = true;
-    $('btnEnter').disabled = true;
+  if (!valid) {
+    $('errText').textContent = '房间号不合法（需三位数字），3 秒后返回大厅。';
+    setTimeout(() => { location.href = '/hall.html'; }, 3000);
     return;
   }
 
-  // 预填（URL token 优先，其次 localStorage）
+  // 口令来自大厅（本地已保存）；此处不重复输入。
   pw = localStorage.getItem(PW_KEY) || '';
   token = urlToken || localStorage.getItem(TOKEN_KEY(code)) || '';
-  $('pwInput').value = pw;
-  $('tokenInput').value = token;
 
-  // 自动进入（口令 + token 都在）
-  if (pw && token) {
-    enter();
-  } else {
-    showGate();
-  }
+  // 从未在大厅输入过口令 → 回大厅完成口令验证。
+  if (!pw) { location.href = '/hall.html'; return; }
 
-  $('btnEnter').onclick = enter;
-  $('pwInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('tokenInput').focus(); });
-  $('tokenInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') enter(); });
-  $('pwInput').addEventListener('input', () => { $('btnEnter').disabled = !($('pwInput').value.trim() && $('tokenInput').value.trim()); });
-  $('tokenInput').addEventListener('input', () => { $('btnEnter').disabled = !($('pwInput').value.trim() && $('tokenInput').value.trim()); });
+  // 无验证码 → 跳校验页让房主输入 6 位验证码。
+  if (!token) { location.href = `/gate/${encodeURIComponent(code)}`; return; }
 
-  // 复制按钮
-  $('btnCopy').onclick = () => { copyText(reEntryUrl(), '已复制重进链接'); };
-  $('btnCopyRaw').onclick = () => { copyText(token, '已复制 TOKEN'); };
+  // 展示重进验证码 + 复制按钮
+  updateCredentialUI();
+
+  $('btnCopyRaw').onclick = () => copyToken();
+
+  connect(pw, token);
 }
 
-function reEntryUrl() {
-  return `${location.origin}/room/${encodeURIComponent(code)}?token=${encodeURIComponent(token)}`;
+function updateCredentialUI() {
+  $('tokenField').value = token;
+  $('btnCopyRaw').disabled = false;
 }
 
-function copyText(text, okMsg) {
+function copyToken() {
+  const btn = $('btnCopyRaw');
   const done = () => {
-    $('copyHint').textContent = okMsg + ' ✓';
-    setTimeout(() => { $('copyHint').textContent = '建房后房主应保存此链接；页面失联或重开浏览器后，用它能重新进入本房间（也可在下方面板粘贴 TOKEN）。'; }, 2500);
+    const orig = btn.textContent;
+    btn.textContent = '已复制 ✓';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
   };
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    navigator.clipboard.writeText(token).then(done).catch(() => fallbackCopy(token, done));
   } else {
-    fallbackCopy(text, done);
+    fallbackCopy(token, done);
   }
 }
 function fallbackCopy(text, done) {
@@ -87,40 +82,13 @@ function fallbackCopy(text, done) {
   done();
 }
 
-function showGate() {
-  $('gate').hidden = false;
-  document.querySelector('main').hidden = true;
-  document.querySelector('aside').hidden = true;
-  $('roomBar').hidden = false;
-}
-function hideGate() {
-  $('gate').hidden = true;
-  document.querySelector('main').hidden = false;
-  document.querySelector('aside').hidden = false;
-}
-
-function enter() {
-  pw = ($('pwInput').value || '').trim();
-  token = ($('tokenInput').value || '').trim();
-  $('gateErr').textContent = '';
-  if (!pw) { $('gateErr').textContent = '请输入口令'; $('pwInput').focus(); return; }
-  if (!token) { $('gateErr').textContent = '请输入房主 TOKEN'; $('tokenInput').focus(); return; }
-  localStorage.setItem(PW_KEY, pw);
-  localStorage.setItem(TOKEN_KEY(code), token);
-  // 展示 token + 复制按钮
-  $('tokenField').value = token;
-  $('btnCopy').disabled = false;
-  $('btnCopyRaw').disabled = false;
-  connect(pw, token);
-}
-
 function connect(p, t) {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const url = `${proto}//${location.host}/console?pw=${encodeURIComponent(p)}&code=${encodeURIComponent(code)}&token=${encodeURIComponent(t)}`;
   if (ws) { try { ws.close(); } catch {} }
   ws = new WebSocket(url);
 
-  ws.onopen = () => { wsConnectedOnce = true; $('errText').textContent = ''; };
+  ws.onopen = () => { $('errText').textContent = ''; };
   ws.onmessage = (ev) => {
     let m; try { m = JSON.parse(ev.data); } catch { return; }
     onServer(m);
@@ -138,8 +106,8 @@ function send(t, p = {}) { if (ws && ws.readyState === WebSocket.OPEN) ws.send(E
 function onServer(m) {
   switch (m.t) {
     case 'state':
-      hideGate();
       $('errText').textContent = '';
+      showConsole();
       render(m.snapshot);
       break;
     case 'event':
@@ -152,12 +120,10 @@ function onServer(m) {
     case 'room:error':
       if (/口令/.test(m.message)) {
         localStorage.removeItem(PW_KEY);
-        $('gateErr').textContent = m.message;
-        showGate(); $('pwInput').focus();
+        location.href = '/hall.html';
       } else if (/token|不存在|不匹配/.test(m.message)) {
         localStorage.removeItem(TOKEN_KEY(code));
-        $('gateErr').textContent = m.message;
-        showGate(); $('tokenInput').focus();
+        location.href = `/gate/${encodeURIComponent(code)}`;
       } else {
         $('errText').textContent = m.message;
       }
@@ -165,13 +131,15 @@ function onServer(m) {
   }
 }
 
+function showConsole() {
+  document.querySelector('main').hidden = false;
+  document.querySelector('aside').hidden = false;
+}
+
 function renderClosed(reason) {
-  // 房间已关闭：清空本地 token，提示并返回大厅。
+  // 房间已关闭：清空本地验证码，提示并返回大厅。
   localStorage.removeItem(TOKEN_KEY(code));
-  showGate();
-  $('gateErr').textContent = `房间 ${code} 已关闭：${reason}`;
-  $('pwInput').value = localStorage.getItem(PW_KEY) || '';
-  $('tokenInput').value = '';
+  $('errText').textContent = `房间 ${code} 已关闭：${reason}`;
   closed = true;
   setTimeout(() => { location.href = '/hall.html'; }, 3200);
 }
@@ -192,45 +160,65 @@ function render(s) {
   $('code').textContent = s.code;
   $('phase').textContent = PHASE_CN[s.phase] ?? s.phase;
   $('phaseNo').textContent = 'SEC.' + String(s.code);
-  $('hostName').textContent = '房主控制台';
+  // 正确显示房主昵称（快照 hostName），不再写死“房主控制台”。
+  $('hostName').textContent = s.hostName ?? '房主';
   // 已识别为房主，解锁操作
   $('btnStart').disabled = false;
   $('btnClose').disabled = false;
 
-  const tbody = $('players').querySelector('tbody');
-  tbody.innerHTML = '';
+  // 玩家表：按阵营分红/蓝两个表渲染（含血量血槽，血槽占满单元格）
+  const unitBySocket = {};
+  for (const u of s.units) if (u.kind === 'player' && u.socketId) unitBySocket[u.socketId] = u;
+  const red = [], blue = [], none = [];
   for (const p of s.players) {
-    const tr = document.createElement('tr');
-    tr.innerHTML =
-      `<td>${esc(p.name)}</td>` +
-      `<td>${p.online ? '<span style="color:var(--green)">●</span>' : '<span class="muted">○</span>'}</td>` +
-      `<td>${p.faction ? (FAC_CN[p.faction] ?? p.faction) : '-'}</td>` +
-      `<td>${p.role ? (ROLE_CN[p.role] ?? p.role) : '-'}</td>` +
-      `<td><span class="mono">${p.tagId ?? '-'}</span></td>`;
-    tbody.appendChild(tr);
+    if (p.faction === 'red') red.push(p);
+    else if (p.faction === 'blue') blue.push(p);
+    else none.push(p);
+  }
+  fillPlayers($('playersRed'), red, unitBySocket);
+  fillPlayers($('playersBlue'), blue, unitBySocket);
+  const noneBox = $('playersNone');
+  if (none.length) {
+    noneBox.innerHTML = '<h3 class="sub-title">未分配</h3><span class="muted-sm">' +
+      none.map((p) => esc(p.name)).join('、') + '</span>';
+  } else {
+    noneBox.innerHTML = '';
   }
 
+  // 掩体：游戏中显示血量
+  const inPlay = s.phase === 'playing' || s.phase === 'armed' || s.phase === 'ended';
   const bunkers = s.units.filter((u) => u.kind === 'bunker');
   $('bunkers').innerHTML = bunkers.length
-    ? bunkers.map((u) => `<span class="tag" title="hp ${u.hp}/${u.maxHp}">id${u.id} ${u.destroyed ? '✕' : '✓'}</span>`).join('')
+    ? bunkers.map((u) => {
+        const hpTxt = inPlay ? ` <span class="mono">${u.hp}/${u.maxHp}</span>` : '';
+        return `<span class="tag" title="hp ${u.hp}/${u.maxHp}">id${u.id}${hpTxt} ${u.destroyed ? '✕' : '✓'}</span>`;
+      }).join('')
     : '<span class="muted-sm">尚未录入掩体</span>';
 
   setBar('red', s.units.find((u) => u.kind === 'base' && u.faction === 'red'));
   setBar('blue', s.units.find((u) => u.kind === 'base' && u.faction === 'blue'));
+}
 
-  const playerUnits = s.units.filter((u) => u.kind === 'player').sort((a, b) => a.id - b.id);
-  $('units').innerHTML = playerUnits.length
-    ? playerUnits.map((u) => {
-        const pct = Math.max(0, Math.min(100, (u.hp / u.maxHp) * 100));
-        const fac = u.faction === 'red' ? 'red' : 'blue';
-        return `<div class="unit">
-          <span class="id">id${u.id}</span>
-          <span class="name">${esc(u.name ?? '?')}</span>
-          <span class="fac ${fac}"></span><span class="role">${ROLE_CN[u.role ?? 'assault'] ?? u.role}</span>
-          <div class="bar"><div class="fill ${fac}" style="width:${pct}%"></div><span>${u.hp}/${u.maxHp}${u.alive ? '' : ' ✕ DOWN'}</span></div>
-        </div>`;
-      }).join('')
-    : '<span class="muted-sm">尚无玩家绑定标签</span>';
+function fillPlayers(tbody, players, unitBySocket) {
+  tbody.innerHTML = '';
+  for (const p of players) {
+    const u = unitBySocket[p.socketId];
+    const pct = u ? Math.max(0, Math.min(100, (u.hp / u.maxHp) * 100)) : 0;
+    const fac = (u && (u.faction || p.faction)) || null;
+    const fillCls = fac === 'red' ? 'red' : fac === 'blue' ? 'blue' : 'gray';
+    const hpText = u ? (u.alive ? `${u.hp}/${u.maxHp}` : 'DOWN') : '未绑定';
+    const hpCell = u
+      ? `<div class="hpbar"><div class="fill ${fillCls}" style="width:${pct}%"></div><span>${hpText}</span></div>`
+      : '<span class="muted-sm">未绑定</span>';
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      `<td>${esc(p.name)}</td>` +
+      `<td>${p.online ? '<span style="color:var(--green)">●</span>' : '<span class="muted">○</span>'}</td>` +
+      `<td>${p.role ? (ROLE_CN[p.role] ?? p.role) : '-'}</td>` +
+      `<td><span class="mono">${p.tagId ?? '-'}</span></td>` +
+      `<td>${hpCell}</td>`;
+    tbody.appendChild(tr);
+  }
 }
 
 function setBar(side, base) {

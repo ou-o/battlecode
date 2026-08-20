@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>BattleCode · 进入房间</title>
+<link rel="stylesheet" href="/battle.css" />
+</head>
+<body class="page-gate">
+<div class="wrap" style="max-width:680px">
+
+  <div class="topbar">
+    <span class="sig"><span class="dot"></span>SERVER ONLINE · battlecode.site</span>
+    <span>HOST CONSOLE · <a href="/hall.html">回大厅</a></span>
+  </div>
+
+  <!-- 大厅 → 房间 的校验页：口令已在大厅通过（本地保存），只需房主 6 位验证码 -->
+  <section class="card gate-card" id="gate">
+    <span class="sec-no">SEC.AUTH</span>
+    <h2>进入房间</h2>
+    <p class="muted">房间号 <b><span class="mono" id="gateCode">—</span></b> · 需输入房主 <b>6 位验证码</b></p>
+    <label>房主验证码
+      <input id="codeInput" inputmode="numeric" pattern="\d{6}" maxlength="6" placeholder="6 位数字" autocomplete="one-time-code" />
+    </label>
+    <div class="row">
+      <button id="btnEnter" class="btn btn-primary" disabled>进入房间</button>
+      <span class="err" id="gateErr"></span>
+    </div>
+    <p class="muted hint">验证码由房主在房间页提供。校验通过后自动进入该房间控制台。</p>
+  </section>
+
+  <p id="errText"></p>
+</div>
+<script src="/gate.js"></script>
+</body>
+</html>

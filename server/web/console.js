@@ -127,7 +127,8 @@ function renderOverview(rooms) {
     tbody.appendChild(tr);
   }
   for (const b of tbody.querySelectorAll('.enterBtn')) {
-    b.onclick = () => { window.open(`/room/${encodeURIComponent(b.dataset.code)}`, '_blank'); };
+    // 从大厅进入已有房间 → 先经校验页输入房主 6 位验证码（口令已在大厅通过）。
+    b.onclick = () => { window.open(`/gate/${encodeURIComponent(b.dataset.code)}`, '_blank'); };
   }
 }
 

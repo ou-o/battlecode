@@ -34,6 +34,11 @@ app.get('/room/:code', (req, res, next) => {
   if (!/^\d{3}$/.test(req.params.code)) return next();
   res.sendFile(path.join(WEB_DIR, 'room.html'));
 });
+// 大厅 → 房间 之间的校验页：只输入房主 6 位验证码（口令已在大厅通过）。
+app.get('/gate/:code', (req, res, next) => {
+  if (!/^\d{3}$/.test(req.params.code)) return next();
+  res.sendFile(path.join(WEB_DIR, 'gate.html'));
+});
 app.use(express.static(WEB_DIR));
 
 const server = http.createServer(app);

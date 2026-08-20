@@ -139,13 +139,13 @@ td .mono { font-family: var(--mono); color: var(--cyan); font-weight: 700; }
 .hide { display: none !important; }
 
 /* ===== 令牌条（房间页）===== */
+.token-caption { margin: 10px 0 2px; }
 .tokenbar {
-  display: flex; align-items: center; gap: 12px; margin: 8px 0 4px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 12px; margin: 2px 0 4px;
 }
-.tokenbar .tk { flex: 1; min-width: 260px; }
 .tokenbar input {
-  width: 100%; min-width: 0; background: var(--bg2); font-family: var(--mono);
-  color: var(--green); font-size: 13px; letter-spacing: .03em;
+  flex: 0 0 auto; width: 12ch; min-width: 0; background: var(--bg2); font-family: var(--mono);
+  color: var(--green); font-size: 15px; letter-spacing: .08em; text-align: center;
 }
 .tokenlink { font-family: var(--mono); color: var(--cyan); word-break: break-all; font-size: 13px; }
 
@@ -159,6 +159,17 @@ td .mono { font-family: var(--mono); color: var(--cyan); font-weight: 700; }
 .bar .fill.red { background: linear-gradient(90deg, #8a1f2b, var(--red)); }
 .bar .fill.blue { background: linear-gradient(90deg, #1b4f8a, var(--blue)); }
 .bar span { position: absolute; left: 9px; top: 0; line-height: 18px; font-size: 11px; color: #fff; letter-spacing: .05em; text-shadow: 0 1px 2px rgba(0,0,0,.7); font-family: var(--mono); }
+/* 玩家血量血槽（房间页玩家表内，占满单元格） */
+.hpbar { display: block; position: relative; width: 100%; min-width: 70px; height: 15px; background: var(--bg2); border: 1px solid var(--line); overflow: hidden; }
+.hpbar .fill { height: 100%; transition: width .25s; }
+.hpbar .fill.red { background: linear-gradient(90deg, #8a1f2b, var(--red)); }
+.hpbar .fill.blue { background: linear-gradient(90deg, #1b4f8a, var(--blue)); }
+.hpbar .fill.gray { background: #3a3f4a; }
+.hpbar span { position: absolute; left: 6px; top: 0; line-height: 15px; font-size: 10px; color: #fff; font-family: var(--mono); letter-spacing: .04em; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
+/* 玩家栏红蓝阵营小标题 */
+.sub-title { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; margin: 14px 0 4px; }
+.sub-title.red { color: var(--red); }
+.sub-title.blue { color: var(--blue); }
 
 /* ===== 玩家单位 ===== */
 .unit { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 13px; }
@@ -170,7 +181,7 @@ td .mono { font-family: var(--mono); color: var(--cyan); font-weight: 700; }
 .unit .role { color: var(--muted); }
 
 /* ===== 事件流 ===== */
-aside.panel { background: var(--panel); border: 1px solid var(--line); padding: 20px 22px; align-self: start; position: relative; }
+aside.panel { background: var(--panel); border: 1px solid var(--line); padding: 20px 22px; align-self: stretch; position: relative; }
 aside.panel::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, var(--orange), transparent); }
 aside.panel h2 { font-size: 13px; color: var(--orange); margin-bottom: 12px; letter-spacing: .14em; text-transform: uppercase; }
 #log { margin: 0; padding: 0; list-style: none; font-family: var(--mono); font-size: 12px; max-height: 60vh; overflow: auto; }

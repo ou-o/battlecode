@@ -15,13 +15,12 @@ const rooms = new Map<string, Room>();
 
 // ---- Token generation ---------------------------------------------------
 
-function randHex(n: number): string {
-  const bytes = new Uint8Array(n);
-  (globalThis.crypto as any).getRandomValues(bytes);
-  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+// 房主验证凭证：6 位数字验证码（000000–999999）。
+// 注：较 token 更短、可被爆破，但每间房以 3 位房间号本身作为作用域，且用于
+// 线下实体对战的控制台场景，属用户明确要求的取舍。比较仍是 room.hostToken === input。
+function genHostToken(): string {
+  return String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0');
 }
-
-function genHostToken(): string { return randHex(16); }
 
 // ---- Helpers ------------------------------------------------------------
 
@@ -222,9 +221,16 @@ export function snapshot(room: Room): RoomSnapshot {
   const units = [...room.units.values()].sort((a, b) => a.id - b.id);
   const players = [...room.players.values()].map(p => ({ ...p }));
   const stats = [...room.stats.values()].sort((a, b) => a.playerId - b.playerId);
+  // 房主昵称：优先建造时指定的 hostName；缺失则退化为房主 socket 对应玩家名。
+  let hostName: string | null = room.hostName;
+  if (!hostName && room.hostSocketId) {
+    const hp = room.players.get(room.hostSocketId);
+    if (hp) hostName = hp.name;
+  }
   return {
     code: room.code,
     phase: room.phase,
+    hostName,
     units,
     players,
     winner: room.winner,

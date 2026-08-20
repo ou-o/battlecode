@@ -69,6 +69,7 @@ export interface Room {
 export interface RoomSnapshot {
   code: string;
   phase: Phase;
+  hostName: string | null;      // 房主昵称（建造时指定）
   units: Unit[];
   players: PlayerSummary[];     // joined (not necessarily bound) players
   winner: Faction | null;

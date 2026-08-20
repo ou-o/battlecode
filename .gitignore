@@ -20,3 +20,6 @@ Design.md
 *.swp
 # ---- Web page backups ----
 *.bak_*
+
+# ---- Preview screenshots (throwaway) ----
+preview*.png
