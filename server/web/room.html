@@ -9,14 +9,28 @@
 <body class="page-room">
   <header>
     <a class="back" href="/hall.html">← 返回大厅</a>
-    <span>房间号 <b id="code"></b></span>
-    <span>阶段 <b id="phase"></b></span>
+    <span>房间号 <b id="code">—</b></span>
+    <span>阶段 <b id="phase">—</b></span>
     <span class="spacer"></span>
     <button id="btnStart">开始游戏</button>
     <button id="btnClose" class="danger">关闭房间</button>
   </header>
 
-  <main>
+  <div id="gate" class="gate">
+    <div class="gate-card">
+      <h2>进入房间需要口令</h2>
+      <p class="muted">房间号 <b id="gateCode">—</b> · 控制台口令 + 房主 token</p>
+      <label>控制台口令<input id="pwInput" type="password" placeholder="ismism" autocomplete="current-password" /></label>
+      <label>房主 token<input id="tokenInput" type="text" placeholder="粘贴 hostToken" /></label>
+      <div class="row">
+        <button id="btnEnter">进入</button>
+        <span class="muted" id="gateErr"></span>
+      </div>
+      <p class="muted hint">口令与 token 也会保存在本地，下次直接进入；若失效会被清空。</p>
+    </div>
+  </div>
+
+  <main hidden>
     <section>
       <h2>玩家</h2>
       <table id="players">
@@ -26,12 +40,12 @@
     </section>
 
     <section>
-      <h2>掩体（24-33）</h2>
+      <h2>掩体（ID 24–33）</h2>
       <div class="row">
-        <input id="bunkerIds" placeholder="如 24,25,26,30">
+        <input id="bunkerIds" placeholder="如 24,25,26,30" />
         <button id="btnBindBunkers">录入</button>
       </div>
-      <div id="bunkers"></div>
+      <div id="bunkers" class="tags"></div>
     </section>
 
     <section>
@@ -52,7 +66,7 @@
     </section>
   </main>
 
-  <aside>
+  <aside hidden>
     <h2>事件流</h2>
     <ol id="log"></ol>
   </aside>

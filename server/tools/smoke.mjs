@@ -12,7 +12,7 @@ function newConn() {
 let logs = [];
 function tag(msg) { logs.push(msg); console.log(msg); }
 
-const host = new WebSocket("ws://localhost:3000/console");
+const host = new WebSocket("ws://localhost:3000/console?pw=ismism");
 let code, token;
 
 function finish(code2 = 0) {

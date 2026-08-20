@@ -19,7 +19,9 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const WEB_DIR = path.resolve(__dirname, '..', 'web');
+const HOST = process.env.HOST ?? '0.0.0.0';
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
+const CONSOLE_PASSWORD = process.env.BC_CONSOLE_PW ?? 'ismism';
 
 const app = express();
 app.use(express.json());
@@ -61,8 +63,16 @@ wss.on('connection', (ws, req) => {
   const query = u.searchParams;
   const ctx: Ctx = { ws, id: sockIdOf(ws), room: null, isConsole };
 
-  // Host console reconnect: ?code=XXX&token=YYY attaches and replays state.
+  // Console password gate. Reject any /console socket whose ?pw= doesn't
+  // match CONSOLE_PASSWORD before registering handlers or adding to ctxs.
   if (isConsole) {
+    const pw = query.get('pw');
+    if (pw !== CONSOLE_PASSWORD) {
+      send(ws, { t: 'room:error', message: '口令错误或缺失' });
+      ws.close(4001, 'bad console password');
+      return;
+    }
+    // Host console reconnect: ?code=XXX&token=YYY attaches and replays state.
     const code = query.get('code');
     const token = query.get('token');
     if (code && token) {
@@ -278,7 +288,6 @@ function handle(ctx: Ctx, msg: ClientMessage): void {
   }
 }
 
-const HOST = process.env.HOST ?? '0.0.0.0';
 server.listen(PORT, HOST, () => {
   console.log(`battlecode server listening on http://${HOST}:${PORT}`);
   for (const ip of lanIPs()) {

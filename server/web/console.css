@@ -79,3 +79,13 @@ table.rooms td button { padding: 4px 10px; font-size: 12px; margin-right: 6px; }
 .page-room header { grid-column: 1 / -1; margin: 0 0 16px; }
 #errText { color: #ff6b6b; padding: 8px 16px; grid-column: 1 / -1; }
 #bunkers { margin: 6px 0; }
+
+/* ---- console password gate (room page) ---- */
+.gate { grid-column: 1 / -1; display: flex; justify-content: center; padding: 40px 16px; }
+.gate-card { background: #181c26; border: 1px solid #2a3142; border-radius: 10px; padding: 22px 24px; max-width: 460px; width: 100%; }
+.gate-card h2 { margin: 0 0 6px; }
+.gate-card .muted.hint { margin-top: 10px; font-size: 11px; }
+.gate-card label { display: flex; flex-direction: column; gap: 4px; margin: 12px 0; font-size: 12px; color: #7d8696; }
+.gate-card .row { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.gate-card #gateErr { color: #ff6b6b; font-size: 12px; }
+.tags { min-height: 24px; }

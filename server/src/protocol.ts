@@ -162,6 +162,7 @@ export const BASE_BLUE_ID = 35;
 
 export const MAX_PLAYERS = 12;
 export const MAX_BUNKERS = 10;
+export const MAX_ROOMS = 10;
 
 export const VALID_CODE_RE = /^\d{3}$/;
 

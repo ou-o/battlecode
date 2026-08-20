@@ -3,8 +3,18 @@ import WebSocket from 'ws';
 // RAW ws helpers — used by the Node harness to act as host (/console) and as
 // extra player sockets (/socket) alongside the automator-driven miniprogram.
 
+// Console password (mirrors server CONSOLE_PASSWORD). Override via env.
+export const CONSOLE_PW = process.env.BC_CONSOLE_PW || 'ismism';
+
+// Ensure a /console URL carries the ?pw= query the server now requires.
+function withPw(url) {
+  if (!url.includes('/console')) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return url + (url.includes('pw=') ? '' : sep + 'pw=' + encodeURIComponent(CONSOLE_PW));
+}
+
 function mkWs(url) {
-  const ws = new WebSocket(url);
+  const ws = new WebSocket(withPw(url));
   return ws;
 }
 

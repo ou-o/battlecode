@@ -5,7 +5,7 @@ import {
   Faction, Room, RoomSnapshot, Unit, PlayerSummary, PlayerStats,
   BUNKER_ID_MIN, BUNKER_ID_MAX, BASE_RED_ID, BASE_BLUE_ID,
   BUNKER_MAX_HP, BASE_MAX_HP,
-  MAX_PLAYERS, MAX_BUNKERS, VALID_CODE_RE,
+  MAX_PLAYERS, MAX_BUNKERS, MAX_ROOMS, VALID_CODE_RE,
   Role, RoomSummary,
 } from './protocol.js';
 
@@ -44,6 +44,9 @@ function newStats(id: number, name: string, faction: Faction, role: Role): Playe
 // ---- Public API ---------------------------------------------------------
 
 export function createRoom(hostName: string, codeHint?: string): { room: Room; ok: true } | { ok: false; message: string } {
+  if (rooms.size >= MAX_ROOMS) {
+    return { ok: false, message: '房间总数已达上限 ' + MAX_ROOMS + ' 间' };
+  }
   let code: string;
   if (codeHint) {
     if (!VALID_CODE_RE.test(codeHint)) return { ok: false, message: '房间号必须为三位数字' };

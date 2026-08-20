@@ -49,13 +49,32 @@ async function waitForServer() {
 }
 
 // HTTP V2 helper — talks to the WeChat devtools HTTP server on HTTP_PORT.
-function httpGet(path) {
+// Handles the async-task redirect pattern: /v2/open & friends return 303 to
+// /v2/taskresult/<id> while the task is pending; poll that URL until it 200s.
+function rawGet(path) {
   return new Promise((resolve, reject) => {
     const req = http.get({ host: '127.0.0.1', port: HTTP_PORT, path }, (res) => {
-      let body = ''; res.on('data', (d) => body += d); res.on('end', () => resolve({ status: res.statusCode, body }));
+      let body = ''; res.on('data', (d) => body += d); res.on('end', () => resolve({ status: res.statusCode, body, location: res.headers.location }));
     });
-    req.on('error', reject); req.setTimeout(60000, () => req.destroy(new Error('http timeout')));
+    req.on('error', reject);
+    req.setTimeout(60000, () => req.destroy(new Error('http timeout')));
   });
+}
+async function httpGet(path) {
+  let r = await rawGet(path);
+  // Follow one redirect to the taskresult URL.
+  if ((r.status === 303 || r.status === 302) && r.location) {
+    const loc = r.location.startsWith('http') ? r.location : r.location;
+    let p = loc;
+    for (let i = 0; i < 100; i++) {
+      const rr = await rawGet(p);
+      if (rr.status === 200) return { status: 200, body: rr.body };
+      if ((rr.status === 303 || rr.status === 302) && rr.location) { p = rr.location; await sleep(300); continue; }
+      return { status: rr.status, body: rr.body };
+    }
+    return { status: r.status, body: 'task poll timeout' };
+  }
+  return { status: r.status, body: r.body };
 }
 async function waitForHttpApi() {
   for (let i = 0; i < 60; i++) {
@@ -201,10 +220,16 @@ async function makePlayer({ code, name, faction, role, tagId }) {
   if (!revived) fail('not revived');
   d = await pageData(); assert(d.bannerText === '已复活', 'revive banner'); log('revived hp=' + d.myUnit.hp);
 
-  set('win');
-  await ev((id) => { const ps = getCurrentPages(); const p = ps[ps.length - 1]; p._trackers[String(id)] = { id, count: 99, misses: 0, visible: true, lastDet: { id, c: [200, 200], p: [[180, 180], [220, 180], [220, 220], [180, 220]] } }; }, BASE_BLUE);
+  set('win'); armWatchdog(90000);
+  // Re-inject the base tracker each iteration: by this point in a run the
+  // camera/wasm pipeline is warm, so _updateTrackers([]) drops an injected
+  // tracker after _DROP frames (~150 ms). Re-injecting every tick keeps the
+  // target visible so each attack() actually emits a hit on the base.
   d = await pageData(); log('pre-win myUnit=' + JSON.stringify({alive:d.myUnit?.alive, canAttack:d.myUnit?.canAttack, hp:d.myUnit?.hp, fac:d.myUnit?.faction}) + ' blueBase=' + JSON.stringify({hp:d.blueBase?.hp, alive:d.blueBase?.alive}));
-  for (let i = 0; i < 55; i++) { await ev(() => { const ps = getCurrentPages(); ps[ps.length - 1].attack(); }); await sleep(40); }
+  for (let i = 0; i < 60; i++) {
+    await ev((id) => { const ps = getCurrentPages(); const p = ps[ps.length - 1]; p._trackers[String(id)] = { id, count: 99, misses: 0, visible: true, lastDet: { id, c: [200, 200], p: [[180, 180], [220, 180], [220, 220], [180, 220]] } }; p.attack(); }, BASE_BLUE);
+    await sleep(30);
+  }
   d = await pageData(); log('post-attack blueBase hp=' + d.blueBase?.hp + ' endedOverlay=' + d.endedOverlay);
   let ended = false;
   for (let i = 0; i < 60; i++) { d = await pageData(); if (d.endedOverlay) { ended = true; break; } await sleep(200); }

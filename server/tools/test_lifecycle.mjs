@@ -4,7 +4,15 @@ import WebSocket from "ws";
 
 const URL = process.env.BC_URL || "ws://127.0.0.1:3000";
 const HTTP = URL.replace(/^ws/, "http");
-function sock(path) { return new WebSocket(URL + path); }
+const CONSOLE_PW = process.env.BC_CONSOLE_PW || "ismism";
+function sock(path) {
+  // Console endpoints require ?pw=; player sockets ignore it.
+  if (path.startsWith("/console")) {
+    const sep = path.includes("?") ? "&" : "?";
+    return new WebSocket(URL + path + sep + "pw=" + CONSOLE_PW);
+  }
+  return new WebSocket(URL + path);
+}
 function send(ws, obj) { ws.send(JSON.stringify(obj)); }
 function onMsg(ws, cb) {
   ws.on("message", (raw) => {
