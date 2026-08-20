@@ -3,102 +3,266 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>BattleCode · 实物 MOBA 对战</title>
+<title>BATTLECODE · 实物 MOBA 对战</title>
 <style>
   :root {
-    --bg: #0f1420; --panel: #1a2130; --panel2: #222b3d;
-    --fg: #e6ebf5; --muted: #8b96ab; --line: #2e3a52;
-    --red: #ff5b5b; --blue: #4da3ff; --accent: #ffd166;
+    --bg: #0a0f14; --bg2: #0d1319; --panel: #101820; --panel2: #151f2a;
+    --fg: #d4dde6; --muted: #7a8a9a; --line: #1e2c3a; --line2: #2a3d52;
+    --cyan: #4dd8ff; --cyan-dim: #1a6b8a; --orange: #ff8c3b; --red: #ff4d5e;
+    --blue: #3d9bff; --green: #3ddc97;
+    --font: "Rajdhani", "Bahnschrift", "DIN Alternate", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
   body {
-    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
-    background: linear-gradient(160deg, var(--bg), #141b2e 60%, #1a2035);
-    color: var(--fg); min-height: 100vh; line-height: 1.6;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--fg); line-height: 1.7;
+    overflow-x: hidden;
   }
-  .wrap { max-width: 920px; margin: 0 auto; padding: 48px 24px 80px; }
-  header.hero { text-align: center; padding: 30px 0 40px; }
+  /* ===== HUD 纹理层 ===== */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      linear-gradient(rgba(77,216,255,.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(77,216,255,.015) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,.08) 2px 4px);
+    mix-blend-mode: overlay;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px 100px; position: relative; z-index: 1; }
+
+  /* ===== 顶部状态栏 ===== */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 0; border-bottom: 1px solid var(--line);
+    font-size: 12px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted);
+  }
+  .topbar .sig { display: flex; align-items: center; gap: 8px; }
+  .topbar .dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 50% { opacity: .4; } }
+
+  /* ===== Hero ===== */
+  header.hero { text-align: center; padding: 90px 0 70px; position: relative; }
+  .hero-tag {
+    display: inline-block; padding: 4px 14px; border: 1px solid var(--cyan-dim);
+    color: var(--cyan); font-size: 12px; letter-spacing: .3em; text-transform: uppercase;
+    margin-bottom: 26px; background: rgba(77,216,255,.04);
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  }
   .logo {
-    display: inline-block; font-size: 46px; font-weight: 800; letter-spacing: 2px;
-    background: linear-gradient(90deg, var(--red), var(--accent), var(--blue));
+    font-size: clamp(52px, 9vw, 96px); font-weight: 800; letter-spacing: .06em; line-height: 1;
+    background: linear-gradient(180deg, #e8f4ff 20%, var(--cyan) 55%, var(--cyan-dim) 100%);
     -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 0 60px rgba(77,216,255,.25);
+    position: relative;
   }
-  .tagline { color: var(--muted); font-size: 16px; margin-top: 8px; }
+  .logo::after {
+    content: "BATTLECODE"; position: absolute; left: 2px; top: 2px; z-index: -1;
+    background: none; color: var(--red); opacity: .12;
+    clip-path: inset(20% 0 30% 0);
+  }
+  .tagline { color: var(--muted); font-size: 16px; margin-top: 18px; letter-spacing: .05em; }
+  .tagline b { color: var(--fg); font-weight: 600; }
+  .cta-row { display: flex; gap: 16px; justify-content: center; margin-top: 38px; flex-wrap: wrap; }
   .cta {
-    display: inline-block; margin-top: 28px; padding: 14px 40px; font-size: 18px;
-    background: linear-gradient(90deg, var(--red), var(--accent));
-    color: #14161c; font-weight: 700; border-radius: 40px; text-decoration: none;
-    box-shadow: 0 6px 24px rgba(255,110,90,.35); transition: transform .15s;
+    display: inline-flex; flex-direction: column; align-items: center;
+    padding: 15px 46px; font-size: 17px; font-weight: 700; letter-spacing: .12em;
+    clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+    transition: transform .15s, box-shadow .15s;
   }
   .cta:hover { transform: translateY(-2px); }
-  .cta small { display: block; font-weight: 400; font-size: 12px; opacity: .75; margin-top: 2px; }
+  .cta-primary {
+    background: linear-gradient(90deg, var(--orange), #ffb03b); color: #14100a;
+    box-shadow: 0 6px 28px rgba(255,140,59,.3);
+  }
+  .cta-primary:hover { box-shadow: 0 10px 36px rgba(255,140,59,.45); }
+  .cta-ghost {
+    border: 1px solid var(--line2); color: var(--cyan); background: rgba(77,216,255,.03);
+  }
+  .cta-ghost:hover { border-color: var(--cyan-dim); background: rgba(77,216,255,.07); }
+  .cta small { font-weight: 400; font-size: 11px; opacity: .7; letter-spacing: .2em; margin-top: 2px; }
+
+  /* ===== 区块 ===== */
   section.card {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
-    padding: 26px 30px; margin: 22px 0;
+    background: var(--panel); border: 1px solid var(--line);
+    padding: 30px 34px; margin: 20px 0; position: relative;
+    clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
   }
-  section.card h2 { font-size: 20px; margin-bottom: 14px; color: var(--accent);
-    display: flex; align-items: center; gap: 10px; }
-  section.card h2 .n {
-    background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
-    width: 30px; height: 30px; display: inline-flex; align-items: center;
-    justify-content: center; font-size: 15px; color: var(--fg);
+  section.card::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: linear-gradient(180deg, var(--cyan), transparent);
   }
-  p { color: var(--fg); margin-bottom: 10px; }
+  .sec-no {
+    position: absolute; right: 26px; top: 20px; font-size: 13px; color: var(--line2);
+    letter-spacing: .2em; font-weight: 700;
+  }
+  section.card h2 {
+    font-size: 19px; margin-bottom: 18px; color: var(--cyan);
+    letter-spacing: .14em; text-transform: uppercase; font-weight: 700;
+    display: flex; align-items: center; gap: 12px;
+  }
+  section.card h2::before { content: "//"; color: var(--cyan-dim); font-weight: 400; }
+  p { margin-bottom: 10px; }
   p.muted { color: var(--muted); }
-  ol.steps { padding-left: 22px; }
-  ol.steps li { margin: 8px 0; color: var(--fg); }
-  ol.steps strong { color: var(--accent); }
-  table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 14px; }
-  th, td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; }
-  th { background: var(--panel2); color: var(--muted); font-weight: 600; }
-  .roles { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 12px; }
-  .role { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
-  .role b { color: var(--accent); }
-  .role span.dim { color: var(--muted); font-size: 13px; display: block; margin-top: 4px; }
-  .tag { display:inline-block; background: var(--panel2); border:1px solid var(--line); border-radius:6px; padding:2px 8px; font-size:13px; margin:2px; color:var(--muted); }
-  footer { text-align:center; color: var(--muted); font-size: 13px; padding-top: 20px; }
-  .divider { height:1px; background: var(--line); margin: 6px 0 14px; }
+  b, strong { color: var(--fg); }
+
+  ol.steps { padding-left: 0; list-style: none; counter-reset: s; }
+  ol.steps li {
+    counter-increment: s; margin: 10px 0; padding-left: 42px; position: relative;
+  }
+  ol.steps li::before {
+    content: "0" counter(s); position: absolute; left: 0; top: 2px;
+    color: var(--orange); font-weight: 800; font-size: 14px; letter-spacing: .1em;
+  }
+  ol.steps strong { color: var(--cyan); }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 9px 14px; text-align: left; }
+  th { background: var(--panel2); color: var(--muted); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 12px; }
+  td { color: var(--fg); }
+  td:first-child { color: var(--muted); }
+  tr:hover td { background: rgba(77,216,255,.03); }
+
+  .roles { display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: 14px; }
+  .role {
+    background: var(--panel2); border: 1px solid var(--line); padding: 18px 20px;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+    transition: border-color .2s;
+  }
+  .role:hover { border-color: var(--cyan-dim); }
+  .role b { color: var(--cyan); letter-spacing: .1em; }
+  .role span.dim { color: var(--muted); font-size: 13px; display: block; margin-top: 5px; }
+  .role .spec { color: var(--orange); font-size: 12px; display: block; margin-top: 8px; letter-spacing: .05em; }
+
+  .tag { display: inline-block; background: var(--panel2); border: 1px solid var(--line); padding: 2px 9px; font-size: 13px; margin: 2px; color: var(--cyan); }
+
+  /* ID 区段可视化 */
+  .idmap { display: flex; gap: 4px; margin: 16px 0 10px; flex-wrap: wrap; }
+  .idblk {
+    flex: 1; min-width: 120px; padding: 12px 14px; border: 1px solid var(--line);
+    background: var(--panel2); font-size: 13px; position: relative;
+  }
+  .idblk .rng { font-size: 20px; font-weight: 800; letter-spacing: .06em; }
+  .idblk .lbl { color: var(--muted); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+  .idblk.cyan { border-color: var(--cyan-dim); } .idblk.cyan .rng { color: var(--cyan); }
+  .idblk.orange { border-color: rgba(255,140,59,.4); } .idblk.orange .rng { color: var(--orange); }
+  .idblk.red { border-color: rgba(255,77,94,.4); } .idblk.red .rng { color: var(--red); }
+  .idblk.blue { border-color: rgba(61,155,255,.4); } .idblk.blue .rng { color: var(--blue); }
+
+  /* 路线图 */
+  .road { border-left: 2px solid var(--line2); padding-left: 24px; margin-top: 10px; }
+  .road-item { position: relative; margin-bottom: 18px; }
+  .road-item::before {
+    content: ""; position: absolute; left: -29px; top: 7px; width: 8px; height: 8px;
+    background: var(--bg); border: 2px solid var(--orange); transform: rotate(45deg);
+  }
+  .road-item.done::before { border-color: var(--green); background: var(--green); }
+  .road-item .rt { font-size: 12px; color: var(--orange); letter-spacing: .15em; text-transform: uppercase; font-weight: 700; }
+  .road-item.done .rt { color: var(--green); }
+  .road-item p { margin: 3px 0 0; font-size: 14px; color: var(--muted); }
+  .road-item p b { color: var(--fg); }
+
+  /* 彩蛋 */
+  .easter {
+    text-align: center; padding: 36px 30px; border: 1px dashed var(--line2);
+    background: rgba(255,140,59,.02);
+  }
+  .easter .cross { font-size: 15px; letter-spacing: .1em; margin: 6px 0; color: var(--muted); }
+  .easter .cross.ok { color: var(--orange); font-weight: 700; font-size: 17px; }
+  .easter .src { font-size: 12px; color: var(--line2); margin-top: 14px; letter-spacing: .15em; }
+
+  .repo {
+    display: inline-flex; align-items: center; gap: 10px; margin-top: 14px;
+    padding: 10px 20px; border: 1px solid var(--line2); font-size: 14px;
+    color: var(--fg); letter-spacing: .06em; transition: border-color .2s;
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  }
+  .repo:hover { border-color: var(--cyan-dim); color: var(--cyan); }
+  .repo .gh { font-weight: 800; }
+
+  footer {
+    text-align: center; color: var(--muted); font-size: 12px; padding-top: 36px;
+    letter-spacing: .2em; text-transform: uppercase;
+  }
+  footer .bar { width: 60px; height: 2px; background: var(--line2); margin: 0 auto 16px; }
+
+  @media (max-width: 640px) {
+    header.hero { padding: 60px 0 50px; }
+    section.card { padding: 22px 20px; }
+    .sec-no { display: none; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
+
+  <div class="topbar">
+    <span class="sig"><span class="dot"></span>SERVER ONLINE · battlecode.site</span>
+    <span>NODE 18 · TS · WS</span>
+  </div>
+
   <header class="hero">
+    <div class="hero-tag">REAL-WORLD MOBA · APRILTAG 25H9</div>
     <div class="logo">BATTLECODE</div>
-    <div class="tagline">基于 AprilTag 25h9 的实物 MOBA 对战 —— 用摄像头识别标签，真人实时开战</div>
-    <a class="cta" href="/hall.html">进入游戏大厅<small>房间总览 · 建房 · 观察对局</small></a>
+    <div class="tagline">手机摄像头识别物理标签 → WebSocket 实时上报 → 服务端结算血量 / 复活 / 胜负<br><b>真人实时的实物 MOBA 对战</b></div>
+    <div class="cta-row">
+      <a class="cta cta-primary" href="/hall.html">进入游戏大厅<small>DEPLOY TO HALL</small></a>
+      <a class="cta cta-ghost" href="https://github.com/ou-o/battlecode">GitHub 仓库<small>VIEW SOURCE</small></a>
+    </div>
   </header>
 
   <section class="card">
-    <h2><span class="n">1</span> 这是什么</h2>
+    <span class="sec-no">SEC.01</span>
+    <h2>这是什么</h2>
     <p>BattleCode 是一款把<b>实体标签 + 摄像头识别 + 实时对战</b>结合起来的类 MOBA 游戏。
     玩家通过微信小程序用摄像头识别印有 <span class="tag">AprilTag 25h9</span> 的实体标签，
-    将识别结果实时上报给服务端，服务端完成血量结算、阵亡复活、掩体摧毁与基地胜负判定。</p>
+    识别结果实时上报服务端，由服务端完成血量结算、阵亡复活、掩体摧毁与基地胜负判定。</p>
     <p class="muted">核心玩法：识别自己的标签 ≈ 操作角色，把识别到的对手标签上报 ≈ 发动攻击。</p>
   </section>
 
   <section class="card">
-    <h2><span class="n">2</span> 玩法流程</h2>
+    <span class="sec-no">SEC.02</span>
+    <h2>玩法流程</h2>
     <ol class="steps">
-      <li><strong>建房：</strong>房主进入大厅，填写昵称并选择一个三位房间号，创建对局。</li>
-      <li><strong>加入：</strong>玩家在微信小程序输入房间号加入，选择阵营（红 / 蓝）与角色。</li>
-      <li><strong>绑标签：</strong>用摄像头识别自己的 25h9 标签，绑定到游戏内 ID（0–23）。</li>
-      <li><strong>布防：</strong>房主录入掩体标签（24–33），然后点击「开始游戏」。</li>
-      <li><strong>开战：</strong>玩家进入战斗页，摄像头识别 + 点击攻击，将识别到的对手 ID 上报，服务端为每个被击目标扣除 10 点血量。</li>
-      <li><strong>胜负：</strong>击毁对方基地（500 HP）即获胜；己方基地被毁即失败。</li>
+      <li><strong>建房</strong> — 房主进入大厅，填写昵称并选择三位房间号，创建对局。</li>
+      <li><strong>加入</strong> — 玩家在微信小程序输入房间号加入，选择阵营（红 / 蓝）与角色。</li>
+      <li><strong>绑标签</strong> — 用摄像头识别自己的 25h9 标签，绑定到游戏内 ID（0–23）。</li>
+      <li><strong>布防</strong> — 房主录入掩体标签（24–33），然后点击「开始游戏」。</li>
+      <li><strong>开战</strong> — 摄像头识别 + 点击攻击，上报识别到的对手 ID，每个被击目标扣 10 点血。</li>
+      <li><strong>胜负</strong> — 击毁对方基地（500 HP）即获胜；己方基地被毁即失败。</li>
     </ol>
   </section>
 
   <section class="card">
-    <h2><span class="n">3</span> 角色</h2>
-    <div class="roles">
-      <div class="role"><b>突击兵</b> <span class="dim">正面推进，近身输出主力</span></div>
-      <div class="role"><b>工程师</b> <span class="dim">坚守与支援（技能特性开发中）</span></div>
-      <div class="role"><b>狙击手</b> <span class="dim">远程点杀（技能特性开发中）</span></div>
+    <span class="sec-no">SEC.03</span>
+    <h2>战术编码 · AprilTag ID 区段</h2>
+    <p class="muted">25h9 字典恰好覆盖 0–35，一区段一兵种，红蓝两色打印区分队伍。</p>
+    <div class="idmap">
+      <div class="idblk cyan"><div class="rng">00–23</div><div class="lbl">玩家 PLAYER</div></div>
+      <div class="idblk orange"><div class="rng">24–33</div><div class="lbl">掩体 BUNKER</div></div>
+      <div class="idblk red"><div class="rng">34</div><div class="lbl">红方基地</div></div>
+      <div class="idblk blue"><div class="rng">35</div><div class="lbl">蓝方基地</div></div>
     </div>
   </section>
 
   <section class="card">
-    <h2><span class="n">4</span> 核心数值</h2>
+    <span class="sec-no">SEC.04</span>
+    <h2>角色</h2>
+    <div class="roles">
+      <div class="role"><b>突击兵</b> <span class="dim">正面推进，近身输出主力</span><span class="spec">规划中：锁定队友 3s 回复 50 血</span></div>
+      <div class="role"><b>工程师</b> <span class="dim">坚守与支援</span><span class="spec">规划中：对掩体伤害提高</span></div>
+      <div class="role"><b>狙击手</b> <span class="dim">远程点杀</span><span class="spec">规划中：对人伤害提高 · 充能射击</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <span class="sec-no">SEC.05</span>
+    <h2>核心数值</h2>
     <table>
       <tr><th>项目</th><th>默认值</th><th>说明</th></tr>
       <tr><td>单次攻击伤害</td><td>10</td><td>每次上报识别到对手 ID 即造成 10 点伤害</td></tr>
@@ -106,22 +270,51 @@
       <tr><td>掩体 HP</td><td>50</td><td>被击 5 次一次性摧毁，本局不重生</td></tr>
       <tr><td>基地 HP</td><td>500</td><td>被击 50 次陷落，决定胜负</td></tr>
       <tr><td>复活等待</td><td>30 秒</td><td>阵亡后到本方基地（id 34 红 / 35 蓝）拍标签复活</td></tr>
-      <tr><td>玩家 ID</td><td>0–23</td><td>最多 12 名玩家</td></tr>
-      <tr><td>掩体 ID</td><td>24–33</td><td>最多 10 个掩体</td></tr>
+      <tr><td>玩家 / 掩体上限</td><td>12 / 10</td><td>MAX_PLAYERS / MAX_BUNKERS</td></tr>
     </table>
   </section>
 
   <section class="card">
-    <h2><span class="n">5</span> 如何游玩</h2>
-    <p><strong>房主：</strong>进入大厅建房并录掩体、开始游戏，即可在房间页实时观察战斗。</p>
-    <p><strong>玩家：</strong>使用微信开发者工具打开 <span class="tag">client/</span> 目录（AprilTag wasm 已预编译），
-    在小程序端「加入对局」页输入房间号加入。</p>
-    <p class="muted">浏览器端点仅供房主观察与指挥；玩家的实际对战操作发生在微信小程序端。</p>
-    <div class="divider"></div>
-    <a class="cta" href="/hall.html">进入游戏大厅 →</a>
+    <span class="sec-no">SEC.06</span>
+    <h2>作战路线图</h2>
+    <div class="road">
+      <div class="road-item done">
+        <div class="rt">已上线 · 核心闭环</div>
+        <p><b>房间生命周期 / 房主控制台 / 小程序客户端 / 攻击结算 / 死亡复活 / 基地胜负 / 个人战绩统计</b>，含端到端冒烟测试。</p>
+      </div>
+      <div class="road-item">
+        <div class="rt">进行中 · P1 玩法扩展</div>
+        <p><b>角色特性差异化</b>（突击回血 / 工程师破掩体 / 狙击充能）、治疗量统计、基地车推进、占点复活。</p>
+      </div>
+      <div class="road-item">
+        <div class="rt">规划中 · P2 体验深化</div>
+        <p><b>手机防御塔单位</b>、弹药换弹机制、部位/距离差异化伤害、实时地图观战、技能大招系统。</p>
+      </div>
+    </div>
   </section>
 
-  <footer>BattleCode · Node.js + WebSocket 实时对战服务端</footer>
+  <section class="card">
+    <span class="sec-no">SEC.07</span>
+    <h2>如何游玩</h2>
+    <p><strong>房主：</strong>进入大厅建房、录入掩体、开始游戏，在房间页实时观察战斗。</p>
+    <p><strong>玩家：</strong>使用微信开发者工具打开 <span class="tag">client/</span> 目录（AprilTag wasm 已预编译），在小程序端「加入对局」页输入房间号加入。</p>
+    <p class="muted">浏览器端点仅供房主观察与指挥；玩家的实际对战操作发生在微信小程序端。</p>
+    <a class="repo" href="https://github.com/ou-o/battlecode"><span class="gh">⌥</span> github.com/ou-o/battlecode</a>
+  </section>
+
+  <section class="easter">
+    <span class="sec-no">SEC.08</span>
+    <div class="cross">《真人CS》×</div>
+    <div class="cross">《红色警戒真人版》×</div>
+    <div class="cross ok">《零 濡鸦之巫女 moba版》✓</div>
+    <div class="src">— 项目灵感 · 未明子 —</div>
+  </section>
+
+  <footer>
+    <div class="bar"></div>
+    BATTLECODE · NODE.JS + WEBSOCKET 实时对战服务端
+  </footer>
+
 </div>
 </body>
 </html>
