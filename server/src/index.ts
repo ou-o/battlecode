@@ -185,6 +185,11 @@ function handle(ctx: Ctx, msg: ClientMessage): void {
 
   switch (msg.t) {
     case 'room:create': {
+      // Security: creating a room grants host control (bunkers / start /
+      // close). This must only be reachable from an authenticated console
+      // socket (which already passed the 口令 gate on connect), never from a
+      // raw player /socket — otherwise the hall's 口令 gate can be bypassed.
+      if (!ctx.isConsole) { send(ws, { t: 'room:error', message: '仅控制台可用（需要口令）' }); return; }
       const r0 = rooms.createRoom(msg.hostName, msg.code);
       if (!r0.ok) { send(ws, { t: 'room:error', message: r0.message }); return; }
       ctx.room = r0.room;

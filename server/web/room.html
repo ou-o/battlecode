@@ -3,76 +3,100 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>BattleCode 控制台 · 房间</title>
-<link rel="stylesheet" href="console.css" />
+<title>BattleCode · 房间</title>
+<link rel="stylesheet" href="/battle.css" />
 </head>
 <body class="page-room">
-  <header>
-    <a class="back" href="/hall.html">← 返回大厅</a>
-    <span>房间号 <b id="code">—</b></span>
-    <span>阶段 <b id="phase">—</b></span>
-    <span class="spacer"></span>
-    <button id="btnStart">开始游戏</button>
-    <button id="btnClose" class="danger">关闭房间</button>
-  </header>
+<div class="wrap" style="max-width:1280px">
 
-  <div id="gate" class="gate">
-    <div class="gate-card">
-      <h2>进入房间需要口令</h2>
-      <p class="muted">房间号 <b id="gateCode">—</b> · 控制台口令 + 房主 token</p>
-      <label>控制台口令<input id="pwInput" type="password" placeholder="ismism" autocomplete="current-password" /></label>
-      <label>房主 token<input id="tokenInput" type="text" placeholder="粘贴 hostToken" /></label>
-      <div class="row">
-        <button id="btnEnter">进入</button>
-        <span class="muted" id="gateErr"></span>
-      </div>
-      <p class="muted hint">口令与 token 也会保存在本地，下次直接进入；若失效会被清空。</p>
-    </div>
+  <div class="topbar">
+    <span class="sig"><span class="dot"></span>SERVER ONLINE · battlecode.site</span>
+    <span>HOST CONSOLE · <a href="/hall.html">回大厅</a></span>
   </div>
 
+  <!-- 房间状态条 -->
+  <section class="card" id="roomBar">
+    <span class="sec-no" id="phaseNo">SEC.ROOM</span>
+    <h2>房间 <span class="sub" id="phase">—</span></h2>
+    <div class="row">
+      <label>房间号<b><span class="mono" id="code">—</span></b></label>
+      <label>房主<b id="hostName">—</b></label>
+      <span class="spacer" style="flex:1"></span>
+      <button id="btnStart" class="btn btn-primary" disabled>开始游戏</button>
+      <button id="btnClose" class="btn btn-danger" disabled>关闭房间</button>
+    </div>
+
+    <!-- 房主 TOKEN + 复制按钮 -->
+    <div class="tokenbar">
+      <label>房间 TOKEN（重进凭证）
+        <input id="tokenField" readonly />
+      </label>
+      <button id="btnCopy" class="btn btn-copy">复制重进链接</button>
+      <button id="btnCopyRaw" class="btn btn-ghost btn-sm">复制 TOKEN</button>
+    </div>
+    <p class="muted-sm" id="copyHint">建房后房主应保存此链接；页面失联或重开浏览器后，用它能重新进入本房间（也可在下方面板粘贴 TOKEN）。</p>
+  </section>
+
+  <!-- 口令门户：口令 + 房主 TOKEN -->
+  <section class="card gate-card gate" id="gate">
+    <span class="sec-no">SEC.AUTH</span>
+    <h2>进入房间</h2>
+    <p class="muted">房间号 <b><span class="mono" id="gateCode">—</span></b> · 需控制台口令 + 房主 TOKEN（服务端校验）</p>
+    <label>控制台口令
+      <input id="pwInput" type="password" placeholder="口令" autocomplete="current-password" />
+    </label>
+    <label>房主 TOKEN
+      <input id="tokenInput" type="text" placeholder="粘贴 hostToken" />
+    </label>
+    <div class="row">
+      <button id="btnEnter" class="btn btn-primary">进入房间</button>
+      <span class="err" id="gateErr"></span>
+    </div>
+    <p class="muted hint">口令与 TOKEN 会保存在本地，下次直接自动进入；失效时会清空要求重填。</p>
+  </section>
+
   <main hidden>
-    <section>
+    <section class="card">
+      <span class="sec-no">SEC.01</span>
       <h2>玩家</h2>
       <table id="players">
-        <thead><tr><th>昵称</th><th>在线</th><th>阵营</th><th>角色</th><th>绑定ID</th></tr></thead>
+        <thead><tr><th>昵称</th><th>在线</th><th>阵营</th><th>角色</th><th>绑定 ID</th></tr></thead>
         <tbody></tbody>
       </table>
     </section>
 
-    <section>
+    <section class="card">
+      <span class="sec-no">SEC.02</span>
       <h2>掩体（ID 24–33）</h2>
       <div class="row">
-        <input id="bunkerIds" placeholder="如 24,25,26,30" />
-        <button id="btnBindBunkers">录入</button>
+        <input id="bunkerIds" class="mono" placeholder="如 24,25,26,30" />
+        <button id="btnBindBunkers" class="btn btn-ghost">录入</button>
       </div>
-      <div id="bunkers" class="tags"></div>
+      <div id="bunkers" class="tags" style="min-height:26px"></div>
     </section>
 
-    <section>
+    <section class="card">
+      <span class="sec-no">SEC.03</span>
       <h2>基地血量</h2>
-      <div class="bar-row">
-        <span class="lbl red">红 34</span>
-        <div class="bar"><div id="redHp" class="fill red"></div><span id="redHpText"></span></div>
-      </div>
-      <div class="bar-row">
-        <span class="lbl blue">蓝 35</span>
-        <div class="bar"><div id="blueHp" class="fill blue"></div><span id="blueHpText"></span></div>
-      </div>
+      <div class="bar-row"><span class="lbl red">红 34</span><div class="bar"><div id="redHp" class="fill red" style="width:0%"></div><span id="redHpText">—</span></div></div>
+      <div class="bar-row"><span class="lbl blue">蓝 35</span><div class="bar"><div id="blueHp" class="fill blue" style="width:0%"></div><span id="blueHpText">—</span></div></div>
     </section>
 
-    <section>
+    <section class="card">
+      <span class="sec-no">SEC.04</span>
       <h2>玩家血量</h2>
       <div id="units"></div>
     </section>
   </main>
 
-  <aside hidden>
+  <aside class="panel" hidden>
+    <span class="sec-no">SEC.LOG</span>
     <h2>事件流</h2>
     <ol id="log"></ol>
   </aside>
 
-  <p class="muted" id="errText"></p>
-
-  <script src="room.js"></script>
+  <p id="errText"></p>
+</div>
+<script src="/room.js"></script>
 </body>
 </html>

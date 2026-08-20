@@ -37,7 +37,19 @@ step("/room/:code returns room.html; /room/bad returns 404");
   const ok = await fetch(`${HTTP}/room/365`, { signal: AbortSignal.timeout(3000) }).catch(() => null);
   check(ok?.status === 200, "/room/365 -> 200");
   const body = await ok.text();
-  check(body.includes("BattleCode 控制台 · 房间"), "served room page for any 3-digit code");
+  check(body.includes("BattleCode · 房间"), "served room page for any 3-digit code");
+}
+
+// ---------------- security: create must require console 口令 ---------------
+step("room:create on a raw /socket (no 口令) is rejected");
+{
+  const p = sock("/socket");
+  const ev = new Promise((res) => onMsg(p, (m) => m.t === "room:error" && res(m)));
+  await new Promise((r) => p.once("open", r));
+  send(p, { t: "room:create", hostName: "evildoer", code: "111" });
+  const m = await Promise.race([ev, wait(1500).then(() => null)]);
+  check(m?.t === "room:error" && /控制台/.test(m.message), "raw /socket room:create rejected (口令 gate not bypassable)");
+  p.close();
 }
 
 // ---------------- empty overview list -----------------------------------
