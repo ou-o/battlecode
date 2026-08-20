@@ -96,8 +96,8 @@ function connectOverview() {
 function send(t, p = {}) { if (ws && ws.readyState === 1) ws.send(ENVELOPE(t, p)); }
 
 function onCreated(m) {
-  // 口令已在 localStorage；把房主 token 放进 URL 带到房间页，房间页保存并展示复制按钮。
-  location.href = `/room/${encodeURIComponent(m.code)}?token=${encodeURIComponent(m.hostToken)}`;
+  // 口令已在 localStorage；在新页面打开房间页并带上房主 token（保留大厅页不动）。
+  window.open(`/room/${encodeURIComponent(m.code)}?token=${encodeURIComponent(m.hostToken)}`, '_blank');
 }
 
 function renderOverview(rooms) {
@@ -127,7 +127,7 @@ function renderOverview(rooms) {
     tbody.appendChild(tr);
   }
   for (const b of tbody.querySelectorAll('.enterBtn')) {
-    b.onclick = () => { location.href = `/room/${encodeURIComponent(b.dataset.code)}`; };
+    b.onclick = () => { window.open(`/room/${encodeURIComponent(b.dataset.code)}`, '_blank'); };
   }
 }
 

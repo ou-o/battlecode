@@ -182,10 +182,20 @@ aside.panel h2 { font-size: 13px; color: var(--orange); margin-bottom: 12px; let
 .bunker { color: #ffd24d; }
 #errText { color: var(--red); padding: 8px 16px; font-family: var(--mono); font-size: 13px; }
 
-/* ===== 房间页布局 ===== */
-.page-room { display: grid; grid-template-columns: 1fr 380px; gap: 18px; padding: 16px; max-width: 1280px; margin: 0 auto; }
+/* ===== 房间页布局 =====
+   网格放在 .wrap 上（body 的唯一直接子元素是 .wrap，放 body 上会导致
+   main/aside 无法并排，事件流会掉到内容下方）。topbar / 房间条 / 口令门户 /
+   错误提示横跨两列，main 在左，事件流 aside 在右。 */
+.page-room .wrap {
+  display: grid; grid-template-columns: 1fr 380px; gap: 18px;
+  max-width: 1280px; margin: 0 auto; padding: 16px;
+}
+.page-room .topbar { grid-column: 1 / -1; }
+.page-room #roomBar { grid-column: 1 / -1; }
+.page-room .gate { grid-column: 1 / -1; }
 .page-room main { grid-column: 1; }
 .page-room aside { grid-column: 2; }
+.page-room #errText { grid-column: 1 / -1; }
 
 /* ===== 口令门户 ===== */
 .gate { display: flex; justify-content: center; padding: 30px 0; }
@@ -198,7 +208,7 @@ footer { text-align: center; color: var(--muted); font-size: 12px; padding-top: 
 footer .bar { width: 60px; height: 2px; background: var(--line2); margin: 0 auto 14px; }
 
 @media (max-width: 860px) {
-  .page-room { grid-template-columns: 1fr; }
+  .page-room .wrap { grid-template-columns: 1fr; }
   .page-room aside { grid-column: 1; }
   section.card { padding: 20px 18px; }
   .sec-no { display: none; }
