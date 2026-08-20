@@ -18,3 +18,5 @@ Design.md
 .vscode/
 .idea/
 *.swp
+# ---- Web page backups ----
+*.bak_*
