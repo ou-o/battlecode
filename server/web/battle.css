@@ -122,6 +122,8 @@ input.code { width: 120px; min-width: 120px; }
 
 /* ===== 表格 ===== */
 table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-wrap table { margin-top: 8px; }
 th, td { border: 1px solid var(--line); padding: 9px 13px; text-align: left; }
 th {
   background: var(--panel2); color: var(--muted); font-weight: 600;
@@ -223,4 +225,10 @@ footer .bar { width: 60px; height: 2px; background: var(--line2); margin: 0 auto
   .page-room aside { grid-column: 1; }
   section.card { padding: 20px 18px; }
   .sec-no { display: none; }
+  /* 手机窄屏：房间总览隐藏低价值列（在线/最近活动/开始时间/胜方），
+     让「进入」操作按钮无需横向滚动即可看到；剩余列宽度不足仍可横向滑动。 */
+  .rooms th:nth-child(4), .rooms td:nth-child(4),
+  .rooms th:nth-child(7), .rooms td:nth-child(7),
+  .rooms th:nth-child(8), .rooms td:nth-child(8),
+  .rooms th:nth-child(9), .rooms td:nth-child(9) { display: none; }
 }

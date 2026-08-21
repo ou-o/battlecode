@@ -96,8 +96,8 @@ function connectOverview() {
 function send(t, p = {}) { if (ws && ws.readyState === 1) ws.send(ENVELOPE(t, p)); }
 
 function onCreated(m) {
-  // 口令已在 localStorage；在新页面打开房间页并带上房主 token（保留大厅页不动）。
-  window.open(`/room/${encodeURIComponent(m.code)}?token=${encodeURIComponent(m.hostToken)}`, '_blank');
+  // 建房成功后自动跳转到该房间页（location.href 同页导航在所有设备可靠，不依赖弹窗）。
+  location.href = `/room/${encodeURIComponent(m.code)}?token=${encodeURIComponent(m.hostToken)}`;
 }
 
 function renderOverview(rooms) {
@@ -122,13 +122,9 @@ function renderOverview(rooms) {
       <td>${ageTxt}</td>
       <td>${started}</td>
       <td>${r.winner ? (FAC_CN[r.winner] ?? r.winner) : '-'}</td>
-      <td><button class="btn btn-ghost btn-sm enterBtn" data-code="${esc(r.code)}">进入</button></td>
+      <td><a class="btn btn-ghost btn-sm" href="/gate/${esc(r.code)}" target="_blank" rel="noopener">进入</a></td>
     `;
     tbody.appendChild(tr);
-  }
-  for (const b of tbody.querySelectorAll('.enterBtn')) {
-    // 从大厅进入已有房间 → 先经校验页输入房主 6 位验证码（口令已在大厅通过）。
-    b.onclick = () => { window.open(`/gate/${encodeURIComponent(b.dataset.code)}`, '_blank'); };
   }
 }
 

@@ -36,15 +36,17 @@
   <section class="card" id="overviewPanel" hidden>
     <span class="sec-no">SEC.01</span>
     <h2>房间总览 <span class="sub" id="ovCount"></span></h2>
-    <table class="rooms" id="roomsTable">
-      <thead>
-        <tr>
-          <th>房间号</th><th>阶段</th><th>玩家</th><th>在线</th><th>房主</th>
-          <th>连接</th><th>最近活动</th><th>开始时间</th><th>胜方</th><th>操作</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="table-wrap">
+      <table class="rooms" id="roomsTable">
+        <thead>
+          <tr>
+            <th>房间号</th><th>阶段</th><th>玩家</th><th>在线</th><th>房主</th>
+            <th>连接</th><th>最近活动</th><th>开始时间</th><th>胜方</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
     <p class="muted" id="ovEmpty">无房间</p>
   </section>
 
@@ -58,7 +60,7 @@
       <label>房间号（三位数字，可空随机）
         <input id="codeHint" class="code" placeholder="如 365" maxlength="3" pattern="\d{3}" />
       </label>
-      <button id="btnCreate" class="btn btn-primary">创建并进入</button>
+      <button id="btnCreate" class="btn btn-primary">创建房间</button>
     </div>
     <p class="muted" id="setupErr"></p>
   </section>
