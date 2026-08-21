@@ -1,0 +1,31 @@
+<view class="scan">
+  <view class="cam-wrap">
+    <camera id="cam" class="camera" mode="normal" resolution="medium" frame-size="medium" device-position="back" flash="off" binderror="onCameraError"></camera>
+    <canvas type="2d" id="overlay" class="overlay"></canvas>
+
+    <!-- top bar: offline tag list + fps -->
+    <view class="hud-top" style="background: rgba(12,14,20,0.78);">
+      <view class="me-row">
+        <text class="me-name">直接识别 · 离线</text>
+        <text class="me-meta">{{tagCount}} 个标签</text>
+        <text class="fps">FPS {{fps}}</text>
+      </view>
+    </view>
+
+    <!-- live visible tag list -->
+    <view class="tagstrip" wx:if="{{visibleIds.length}}">
+      <text wx:for="{{visibleIds}}" wx:key="*this" class="tag-chip">id {{item}}</text>
+    </view>
+    <view wx:else class="tagstrip hint">
+      <text class="hint-text">{{running ? '未检测到标签…' : '已暂停'}}</text>
+    </view>
+
+    <!-- footer controls -->
+    <view class="footer">
+      <button class="toggle-btn" bindtap="toggle">{{running ? '暂停' : '继续'}}</button>
+      <button class="back-btn" bindtap="goBack">返回</button>
+    </view>
+
+    <view wx:if="{{statusText}}" class="loading-hint">{{statusText}}</view>
+  </view>
+</view>

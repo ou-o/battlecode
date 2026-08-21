@@ -96,6 +96,8 @@ Page({
   },
   gotoHost() { wx.navigateTo({ url: '/pages/host/host' }); },
 
+  gotoScan() { wx.navigateTo({ url: '/pages/scan/scan' }); },
+
   joinRoom() {
     const { code, name } = this.data;
     if (!/^\d{3}$/.test(code)) { this.setData({ err: '房间号必须是三位数字' }); return; }

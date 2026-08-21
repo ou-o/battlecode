@@ -2,6 +2,7 @@
   "pages": [
     "pages/lobby/lobby",
     "pages/host/host",
+    "pages/scan/scan",
     "pages/index/index",
     "pages/result/result"
   ],

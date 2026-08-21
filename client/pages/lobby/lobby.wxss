@@ -1,6 +1,8 @@
 .page { padding: 24rpx; }
 .bc-title { font-size: 44rpx; font-weight: 700; margin: 24rpx 0; }
 .muted-row { display: flex; justify-content: space-between; font-size: 24rpx; margin: 12rpx 0; }
+.scan-entry { margin: 24rpx 0; }
+.bc-btn.ghost { background: transparent; color: #00ff88; border: 2rpx solid #00ff88; }
 .link { color: #4d9bff; }
 .center { text-align: center; }
 .sec-title { font-size: 26rpx; color: #9aa6bd; margin-bottom: 16rpx; }

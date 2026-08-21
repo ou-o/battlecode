@@ -22,6 +22,9 @@
       <text class="link" bindtap="toggleServerInput">{{showServerInput ? '收起' : '修改服务器地址'}}</text>
       <text class="link" bindtap="gotoHost">我是房主 →</text>
     </view>
+    <view class="scan-entry">
+      <button class="bc-btn ghost" bindtap="gotoScan">直接识别</button>
+    </view>
 
     <view class="bc-err" wx:if="{{err}}">{{err}}</view>
     <button class="bc-btn" bindtap="joinRoom">加入房间</button>
