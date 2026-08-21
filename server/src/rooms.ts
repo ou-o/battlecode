@@ -22,6 +22,16 @@ function genHostToken(): string {
   return String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0');
 }
 
+// 玩家侧持久身份：连接中断重连时据 token 恢复到原 summary（保持 faction/role/
+// tag 绑定与战绩），比随机每连接一个 socketId 更稳。设备标签为线下实体对战，属
+// 用户明确的取舍。
+function genPlayerToken(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 避开易混淆 0/O/1/I
+  let s = '';
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
 // ---- Helpers ------------------------------------------------------------
 
 function makeBaseUnit(faction: Faction): Unit {
@@ -135,14 +145,32 @@ export function leaveRoom(room: Room, socketId: string): LeaveResult {
   };
 }
 
-export function joinRoom(room: Room, socketId: string, name: string): { ok: true; me: PlayerSummary } | { ok: false; message: string } {
+export function joinRoom(room: Room, socketId: string, name: string, token?: string): { ok: true; me: PlayerSummary; reattached?: boolean } | { ok: false; message: string } {
+  // Re-join with a player token: the same physical device reconnecting; reattach
+  // it to its existing summary (restoring faction/role/tag + bound unit), instead
+  // of creating an empty fresh summary. No capacity issue — that device is already
+  // counted in players.size.
+  if (token) {
+    const existing = [...room.players.values()].find(p => p.token === token);
+    if (existing) {
+      const oldSocketId = existing.socketId;
+      existing.socketId = socketId;
+      existing.online = true;
+      existing.name = name;
+      // Re-point any bound unit / stats to the new socket.
+      for (const u of room.units.values()) {
+        if (u.kind === 'player' && u.socketId === oldSocketId) u.socketId = socketId;
+      }
+      room.lastActivity = Date.now();
+      return { ok: true, me: existing, reattached: true };
+    }
+  }
   if (room.players.size >= MAX_PLAYERS && !room.players.has(socketId)) {
     return { ok: false, message: '房间已满（上限 ' + MAX_PLAYERS + ' 人）' };
   }
-  // Re-join on reconnect: keep prior faction/role/tagId binding.
   let me = room.players.get(socketId);
   if (!me) {
-    me = { socketId, name, faction: null, role: null, tagId: null, online: true };
+    me = { socketId, name, faction: null, role: null, tagId: null, online: true, token: genPlayerToken() };
     room.players.set(socketId, me);
   } else {
     me.name = name;

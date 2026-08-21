@@ -212,6 +212,55 @@ step("bad token -> room:error from server on reconnect");
   h.close();
 }
 
+// ---------------- player token rejoin restores binding -------------------
+step("player disconnect + rejoin via token restores faction/role/tag + unit");
+{
+  const h = sock("/console");
+  await new Promise((r) => h.once("open", r));
+  const cr = new Promise((res) => onMsg(h, (m) => m.t === "room:created" && res(m)));
+  send(h, { t: "room:create", hostName: "pRej", code: "633" });
+  const c3 = (await Promise.race([cr, wait(1000).then(() => null)])).code;
+
+  const p = sock("/socket");
+  await new Promise((r) => p.once("open", r));
+  const jv = new Promise((res) => onMsg(p, (m) => m.t === "room:joined" && res(m)));
+  send(p, { t: "room:join", code: c3, name: "val" });
+  const j = await Promise.race([jv, wait(1500).then(() => null)]);
+  const tok = j.me.token;
+  check(tok && tok.length >= 6, "room:joined carries a player token");
+  send(p, { t: "faction", faction: "blue" });
+  send(p, { t: "role", role: "engineer" });
+  send(p, { t: "bindTag", tagId: 6 });
+  await wait(250);
+
+  // drop the socket, then reconnect with the token
+  const oldSock = j.me.socketId;
+  p.close();
+  await wait(250);
+  const p2 = sock("/socket");
+  await new Promise((r) => p2.once("open", r));
+  const jv2 = new Promise((res) => onMsg(p2, (m) => m.t === "room:joined" && res(m)));
+  send(p2, { t: "room:join", code: c3, name: "val", token: tok });
+  const j2 = await Promise.race([jv2, wait(1500).then(() => null)]);
+  check(j2.me.socketId !== oldSock && j2.me.faction === "blue" && j2.me.role === "engineer" && j2.me.tagId === 6,
+    "rejoin restores faction/role/tagId on a new socket, same token");
+
+  // unit must be re-pointed to the new socket and able to attack after start
+  send(h, { t: "host:start" });
+  const stEv = new Promise((res) => onMsg(p2, (m) => m.t === "state" && m.snapshot.units.find((u) => u.kind === "player" && u.id === 6 && u.canAttack) && res(m)));
+  const st = await Promise.race([stEv, wait(1500).then(() => null)]);
+  const u6 = st?.snapshot?.units?.find((x) => x.kind === "player" && x.id === 6);
+  check(u6 && u6.socketId === j2.me.socketId, "bound unit re-pointed to reconnected socket");
+
+  const hitEv = new Promise((res) => onMsg(p2, (m) => m.t === "event" && m.e.t === "hit" && res(m)));
+  send(p2, { t: "attack", ids: [34] }); // enemy red base
+  const hh = await Promise.race([hitEv, wait(1500).then(() => null)]);
+  check(hh?.e?.t === "hit", "reconnected player can attack");
+
+  send(h, { t: "host:close" });
+  h.close(); p2.close();
+}
+
 step("test complete");
 console.log(`\n=== result: ${passes} pass, ${failures} fail ===`);
 process.exit(failures ? 1 : 0);

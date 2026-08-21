@@ -84,6 +84,7 @@ export interface PlayerSummary {
   role: Role | null;
   tagId: number | null;         // null until bound
   online: boolean;
+  token: string;                // stable per physical device, survives reconnect
 }
 
 // ---- Game event stream (incremental) -------------------------------------
@@ -107,7 +108,7 @@ export interface EventEnvelope {
 
 export type ClientMessage =
   | { t: 'room:create'; hostName: string; code?: string }
-  | { t: 'room:join'; code: string; name: string }
+  | { t: 'room:join'; code: string; name: string; token?: string }
   | { t: 'room:leave' }
   | { t: 'room:list' }
   | { t: 'faction'; faction: Faction }

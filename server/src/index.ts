@@ -206,7 +206,7 @@ function handle(ctx: Ctx, msg: ClientMessage): void {
     case 'room:join': {
       const room = rooms.getRoom(msg.code);
       if (!room) { send(ws, { t: 'room:error', message: '房间不存在' }); return; }
-      const r = rooms.joinRoom(room, ctx.id, msg.name);
+      const r = rooms.joinRoom(room, ctx.id, msg.name, msg.token);
       if (!r.ok) { send(ws, { t: 'room:error', message: r.message }); return; }
       ctx.room = room;
       send(ws, { t: 'room:joined', snapshot: rooms.snapshot(room), me: r.me });

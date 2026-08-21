@@ -33,6 +33,8 @@ client/
 
 `project.config.json` 中 `libVersion: 2.19.4`，满足以上要求。
 
+> **连接与口令**：客户端经 `/console?pw=<口令>` 建立连接（口令内嵌于 `utils/ws.js` 的 `CONSOLE_PW`，缺省同服务端 `ismism`），因此小程序无需手动输口令即可建房/建房控，玩家动作同样走这条通道。若服务端以不同的 `BC_CONSOLE_PW` 启动，**必须同步改 `client/utils/ws.js` 里的 `CONSOLE_PW`**。
+
 ## 快速开始
 
 ### 1. 启动后端
