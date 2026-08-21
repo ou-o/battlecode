@@ -85,13 +85,13 @@ async function waitForHttpApi() {
 }
 async function openProjectViaHttp() {
   // Reset to a clean project window: close first (also frees any automator WS
-  // that a previous run may have left bound), then open. /v2/close has a 3s
-  // confirm grace, so we let it settle.
+  // that a previous run may have left bound). /v2/close has a 3s confirm
+  // grace, so we let it settle. We deliberately do NOT /v2/open here: opening
+  // via HTTP leaves the project in a state where the following automator.launch
+  // (which itself opens the project via `cli auto`) hangs waiting for its WS.
   try { await httpGet('/v2/close?project=' + encodeURIComponent(PROJECT)); } catch {}
   await sleep(5000);
-  const r = await httpGet('/v2/open?project=' + encodeURIComponent(PROJECT));
-  if (r.status !== 200) fail('HTTP /v2/open failed status=' + r.status + ' body=' + r.body);
-  log('HTTP /v2/close+/v2/open ok (' + r.status + ')');
+  log('project closed; letting automator.launch reopen');
 }
 const makeHost = () => connect(SERVER + '/console');
 async function makePlayer({ code, name, faction, role, tagId }) {

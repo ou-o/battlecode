@@ -112,6 +112,7 @@ function attackLoop(wsAlice) {
         if (j >= 51) {
           clearInterval(t2);
           tag("alice exhausted base attacks");
+          host.send(JSON.stringify({ t: "host:close" }));
           setTimeout(finish, 1500);
         }
       }, 30);
