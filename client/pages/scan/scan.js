@@ -1,6 +1,7 @@
 // pages/scan/scan.js — 「直接识别」离线模式：不开房、不建角色、不上报，仅跑
 // AprilTag 25h9 识别，把当前画面里的所有标签实时框出来并列出 ID。
 // 完全离线：不连 ws，不读房间/角色状态。
+const detect = require('../../utils/detectWorker.js');
 Page({
   data: {
     running: true,
@@ -44,19 +45,8 @@ Page({
   },
 
   _initWorker() {
-    let w;
-    try {
-      w = wx.createWorker('workers/detect.js');
-    } catch (e) {
-      this.setData({ statusText: 'Worker 创建失败: ' + e.message });
-      return;
-    }
-    if (!w) {
-      this.setData({ statusText: 'Worker 未注册，请确认 app.json 的 workers 字段后重新编译' });
-      return;
-    }
-    this._worker = w;
-    this._worker.onMessage((res) => {
+    // 使用全局唯一的 detect worker 单例，订阅其消息（不再各自 createWorker/terminate）。
+    this._unsubWorker = detect.subscribe((res) => {
       this._workerBusy = false;
       if (res.type === 'ready') {
         this.setData({ wasmReady: true, statusText: '' });
@@ -103,7 +93,7 @@ Page({
       if (!this.data.running || !this.data.wasmReady || this._workerBusy) return;
       this._workerBusy = true;
       this._frameId++;
-      this._worker.postMessage({ type: 'frame', frameId: this._frameId, width: frame.width, height: frame.height, data: frame.data });
+      detect.post({ type: 'frame', frameId: this._frameId, width: frame.width, height: frame.height, data: frame.data });
     });
     this._listener.start();
   },
@@ -201,11 +191,7 @@ Page({
 
   _teardown() {
     if (this._listener) { try { this._listener.stop(); } catch (e) {} this._listener = null; }
-    if (this._worker) {
-      try { this._worker.postMessage({ type: 'shutdown' }); } catch (e) {}
-      try { this._worker.terminate(); } catch (e) {}
-      this._worker = null;
-    }
+    if (this._unsubWorker) { this._unsubWorker(); this._unsubWorker = null; }
     this._trackers = {};
   },
 });

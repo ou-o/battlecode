@@ -17,11 +17,6 @@
 
 .pill-row { display: flex; flex-wrap: wrap; }
 .already-bound { color: #6bd96b; font-size: 24rpx; margin-top: 12rpx; text-align: center; }
-
-.overlay { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(0,0,0,0.92); z-index: 200; }
-.overlay-inner { position: absolute; inset: 0; display: flex; flex-direction: column; }
-.bindCam { width: 100%; flex: 1; }
-.overlay-hud { padding: 24rpx; background: #0c0e14; color: white; }
-.found { font-size: 32rpx; color: #6bd96b; margin: 16rpx 0; }
-.manual-row { margin: 16rpx 0; }
+.bind-row { display: flex; align-items: center; gap: 12rpx; }
+.bind-row .bc-input { flex: 1; }
 .inline { flex: 1; margin: 12rpx 8rpx; width: auto; }

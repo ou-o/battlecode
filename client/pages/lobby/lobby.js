@@ -16,10 +16,8 @@ Page({
     me: null,
     phase: 'lobby',
     err: '',
-    // binding overlay state
-    bindingTag: false,
-    bindingError: '',
-    bindingFoundIds: [],
+    // 绑定的 ID 输入框（0-23）
+    bindInput: '',
     ROLE_CN,
   },
 
@@ -78,7 +76,6 @@ Page({
 
   onUnload() {
     (this._unsubs || []).forEach((u) => u && u());
-    this._killBinding();
   },
 
   onInput(e) {
@@ -124,71 +121,22 @@ Page({
     ws.send('role', { role: e.currentTarget.dataset.role });
   },
 
-  // ---- tag binding overlay ----------------------------------------------
-  startBinding() {
-    this.setData({ bindingTag: true, bindingError: '', bindingFoundIds: [] });
-    this._workerBusy = false;
-    setTimeout(() => this._initBinding(), 50);  // wait <camera> mount
+  // ---- tag binding: 手动输入 ID (0-23) --------------------------------
+  bindInput(e) {
+    // 只保留数字，不超过两位，并在 0-23 内截断
+    let v = (e.detail.value || '').replace(/\D/g, '').slice(0, 2);
+    let id = v === '' ? '' : Math.min(23, parseInt(v, 10)).toString();
+    this.setData({ bindInput: id });
   },
-  cancelBinding() {
-    this.setData({ bindingTag: false });
-    this._killBinding();
-  },
-  _initBinding() {
-    // create camera frame listener + detect worker
-    try {
-      this._cam = wx.createCameraContext();
-      this._worker = wx.createWorker('workers/detect.js');
-      this._workerReady = false;
-      this._worker.onMessage((res) => {
-        this._workerBusy = false;
-        if (res.type === 'ready') {
-          this._workerReady = true;
-          if (this._listener) this._listener.start();
-          return;
-        }
-        if (res.type === 'dets') {
-          const ids = (res.detections || []).map((d) => d.id).filter((id) => id <= 23).sort((a, b) => a - b);
-          if (ids.length && !ids.every((x) => (this.data.bindingFoundIds || []).includes(x))) {
-            // refresh detected id(s) — keep newest unique list
-            this.setData({ bindingFoundIds: ids });
-          }
-        }
-        if (res.type === 'error') this.setData({ bindingError: res.message });
-      });
-    } catch (e) {
-      this.setData({ bindingError: 'Worker 或相机创建失败: ' + (e?.message ?? e) });
+  submitBind() {
+    const v = (this.data.bindInput || '').trim();
+    if (v === '') { this.setData({ err: '请输入要绑定的 ID' }); return; }
+    const id = parseInt(v, 10);
+    if (id < 0 || id > 23) {
+      this.setData({ err: 'ID 必须在 0-23 之间' });
+      return;
     }
-    // start frame listener
-    const query = wx.createSelectorQuery();
-    query.select('#bindingCam').fields({ node: true, size: true }).exec((res) => {
-      // We use the camera frame-size path, not canvas node — easier API.
-    });
-    if (!this._listener) {
-      this._listener = this._cam.onCameraFrame((frame) => {
-        if (!this._workerReady || this._workerBusy) return;
-        // frame is an ArrayBuffer-like; convert to data
-        this._workerBusy = true;
-        this._worker.postMessage({ type: 'frame', width: frame.width, height: frame.height, data: frame.data, frameId: Date.now() });
-      });
-      this._listener.start();
-    }
-  },
-  confirmBinding() {
-    const ids = this.data.bindingFoundIds || [];
-    if (!ids.length) { wx.showToast({ title: '未检测到标签', icon: 'none' }); return; }
-    ws.send('bindTag', { tagId: ids[0] });
-    this.setData({ bindingTag: false });
-    this._killBinding();
-  },
-  manualTagInput(e) {
-    const v = e.detail.value.replace(/[^\d]/g, '').slice(0, 2);
-    const id = v === '' ? null : parseInt(v, 10);
-    this.setData({ bindingFoundIds: id == null ? [] : [id] });
-  },
-  _killBinding() {
-    if (this._listener) { try { this._listener.stop(); } catch (e) {} this._listener = null; }
-    if (this._worker) { try { this._worker.postMessage({ type: 'shutdown' }); } catch (e) {} this._worker = null; }
-    this._workerReady = false; this._workerBusy = false;
+    this.setData({ err: '' });
+    ws.send('bindTag', { tagId: id });
   },
 });

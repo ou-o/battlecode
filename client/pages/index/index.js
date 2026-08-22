@@ -1,5 +1,6 @@
 // pages/index/index.js — 战斗页：AprilTag 25h9 实时识别 + 攻击按钮 + 战况 UI。
 const ws = require('../../utils/ws.js');
+const detect = require('../../utils/detectWorker.js');
 
 const ROLE_CN = { assault: '突击兵', engineer: '工程师', sniper: '狙击手' };
 const BASE_RED = 34, BASE_BLUE = 35;
@@ -87,23 +88,8 @@ Page({
 
   // ---- WASM worker setup (25h9 fixed) -----
   _initWorker() {
-    console.log('canIUse createWorker:', wx.canIUse('createWorker'), '| app.json workers dir configured');
-    let w;
-    try {
-      w = wx.createWorker('workers/detect.js');
-      console.log('createWorker("workers/detect.js") =>', w, 'type=', typeof w);
-    } catch (e) {
-      console.warn('createWorker threw', e);
-      this.setData({ statusText: 'Worker 创建失败: ' + e.message });
-      return;
-    }
-    if (!w) {
-      console.warn('createWorker returned undefined/null — worker path not registered');
-      this.setData({ statusText: 'Worker 未注册，请确认 app.json 的 workers 字段后重新编译' });
-      return;
-    }
-    this._worker = w;
-    this._worker.onMessage((res) => {
+    // 使用全局唯一的 detect worker 单例，订阅其消息（不再各自 createWorker/terminate）。
+    this._unsubWorker = detect.subscribe((res) => {
       this._workerBusy = false;
       if (res.type === 'ready') {
         this.setData({ wasmReady: true, statusText: '' });
@@ -136,7 +122,7 @@ Page({
       if (!this.data.running || !this.data.wasmReady || this._workerBusy) return;
       this._workerBusy = true;
       this._frameId++;
-      this._worker.postMessage({ type: 'frame', frameId: this._frameId, width: frame.width, height: frame.height, data: frame.data });
+      detect.post({ type: 'frame', frameId: this._frameId, width: frame.width, height: frame.height, data: frame.data });
     });
     this._listener.start();
   },
@@ -440,11 +426,7 @@ Page({
   _teardown() {
     if (this._listener) { try { this._listener.stop(); } catch (e) {} this._listener = null; }
     this._trackers = {};
-    if (this._worker) {
-      try { this._worker.postMessage({ type: 'shutdown' }); } catch (e) {}
-      try { this._worker.terminate(); } catch (e) {}
-      this._worker = null;
-    }
+    if (this._unsubWorker) { this._unsubWorker(); this._unsubWorker = null; }
   },
 
   onCameraError(e) {

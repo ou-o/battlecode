@@ -66,33 +66,17 @@
 
     <view class="bc-card">
       <view class="sec-title">3. 绑定你的 AprilTag</view>
-      <view class="bc-muted">拍下你拿到的那张 25h9 标签，自动绑定 ID（0–23）。</view>
-      <button class="bc-btn" bindtap="startBinding">{{me.tagId != null ? '重新拍标签' : '拍标签绑定'}}</button>
+      <view class="bc-muted">填写你拿到的那张 25h9 标签的 ID（0–23）。</view>
+      <view class="bind-row">
+        <input class="bc-input" type="number" bindinput="bindInput" value="{{bindInput}}" placeholder="标签 ID (0-23)" maxlength="2" />
+        <button class="bc-btn success inline" bindtap="submitBind" disabled="{{bindInput === ''}}">{{me.tagId != null ? '重新绑定' : '绑定'}}</button>
+      </view>
       <view wx:if="{{me.tagId != null}}" class="already-bound">已绑定 ID {{me.tagId}} ✓</view>
     </view>
 
     <view class="bc-err" wx:if="{{err}}">{{err}}</view>
     <view class="bc-muted center" wx:if="{{me.tagId != null}}">等待房主录入掩体并开始游戏…</view>
     <button class="bc-btn danger" bindtap="leaveRoom">退出房间</button>
-  </view>
-
-  <!-- binding overlay -->
-  <view wx:if="{{bindingTag}}" class="overlay">
-    <view class="overlay-inner">
-      <camera id="bindingCam" class="bindCam" device-position="back" flash="off" frame-size="medium"></camera>
-      <view class="overlay-hud">
-        <view class="bc-muted">对准你的标签，识别后会显示在此</view>
-        <view wx:if="{{bindingError}}" class="bc-err">{{bindingError}}</view>
-        <view wx:if="{{bindingFoundIds.length}}" class="found">检测到 ID：{{bindingFoundIds}}</view>
-        <view class="manual-row">
-          <input class="bc-input" placeholder="或手动输入 ID (0-23)" type="number" bindinput="manualTagInput" />
-        </view>
-        <view class="bc-row">
-          <button class="bc-btn danger inline" bindtap="cancelBinding">取消</button>
-          <button class="bc-btn success inline" bindtap="confirmBinding" disabled="{{!bindingFoundIds.length}}">绑定</button>
-        </view>
-      </view>
-    </view>
   </view>
 
 </view>
