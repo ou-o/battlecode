@@ -45,6 +45,7 @@ Page({
     this._ctx = null;
     this._canvasW = 0;
     this._canvasH = 0;
+    this._canvasReady = false;
     this._frameW = 0;
     this._frameH = 0;
     this._respawnTicker = null;
@@ -79,6 +80,12 @@ Page({
     if (this._respawnTicker) clearInterval(this._respawnTicker);
     if (this._floatersTick) clearInterval(this._floatersTick);
   },
+  onReady() {
+    // onLoad may have run _initCanvas before <camera> finished layout, in
+    // which case the selector returned the canvas default 300x150. onReady
+    // fires after first render is complete, so re-query here as a fallback.
+    if (!this._canvasReady) this._initCanvas();
+  },
   onHide() {
     if (this._listener) this._listener.stop();
   },
@@ -100,9 +107,19 @@ Page({
         return;
       }
       if (res.type !== 'dets') return;
+      // [DEBUG ALIGN] print RAW worker detections (bypass tracker cache) 1/s
+      if (!this._rawDbgTs || Date.now() - this._rawDbgTs > 1000) {
+        this._rawDbgTs = Date.now();
+        const dets = res.detections || [];
+        const info = dets.length ? ('id=' + dets[0].id + ' c=[' + dets[0].c[0].toFixed(0) + ',' + dets[0].c[1].toFixed(0) + '] p0=[' + dets[0].p[0][0].toFixed(0) + ',' + dets[0].p[0][1].toFixed(0) + ']') : '(none)';
+        console.log('[ALIGN-RAW] frame=' + res.width + 'x' + res.height + ' ndets=' + dets.length + ' ' + info + ' busy=' + this._workerBusy);
+      }
       this._updateTrackers(res.detections || []);
       this._frameW = res.width;
       this._frameH = res.height;
+      // First-frame fallback: if _initCanvas hasn't captured the canvas node
+      // yet (onLoad ran before the element was ready), retry now.
+      if (!this._canvasReady) this._initCanvas();
       this._fpsCount++;
       const now = Date.now();
       if (now - this._fpsLastTs >= 500) {
@@ -129,17 +146,25 @@ Page({
 
   _initCanvas() {
     const q = this.createSelectorQuery();
-    q.select('#overlay').fields({ node: true, size: true }).exec((res) => {
+    q.select('#overlay').fields({ node: true }).exec((res) => {
       if (!res || !res[0] || !res[0].node) return;
       const c = res[0].node;
-      const dpr = (wx.getWindowInfo ? wx.getWindowInfo().pixelRatio : 2) || 2;
-      c.width = res[0].width * dpr;
-      c.height = res[0].height * dpr;
+      // <canvas type="2d"> reports its attribute size (default 300x150) via
+      // fields({size:true}), NOT its CSS layout box — so we can't rely on the
+      // selector for dimensions. The overlay is inset:0 (full-screen), so use
+      // the window size as its CSS box.
+      const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+      const w = info.windowWidth, h = info.windowHeight;
+      const dpr = info.pixelRatio || 2;
+      c.width = w * dpr;
+      c.height = h * dpr;
       this._canvas = c;
       this._ctx = c.getContext('2d');
       this._ctx.scale(dpr, dpr);
-      this._canvasW = res[0].width;
-      this._canvasH = res[0].height;
+      this._canvasW = w;
+      this._canvasH = h;
+      this._canvasReady = true;
+      this._drawOverlay();
     });
   },
 
@@ -168,7 +193,33 @@ Page({
     const W = this._canvasW, H = this._canvasH;
     ctx.clearRect(0, 0, W, H);
     if (!this._frameW || !this._frameH) return;
-    const sx = W / this._frameW, sy = H / this._frameH;
+    // [DEBUG ALIGN] log frame/canvas dims + first detection once per second
+    if (!this._dbgTs || Date.now() - this._dbgTs > 1000) {
+      this._dbgTs = Date.now();
+      const ids = Object.keys(this._trackers);
+      const first = ids.length ? this._trackers[ids[0]].lastDet : null;
+      console.log('[ALIGN] canvas=' + W + 'x' + H + ' frame=' + this._frameW + 'x' + this._frameH +
+        ' rot=' + (this._frameW > this._frameH && W < H) +
+        (first ? (' id=' + first.id + ' c=[' + first.c[0].toFixed(0) + ',' + first.c[1].toFixed(0) + ']' +
+          ' p0=[' + first.p[0][0].toFixed(0) + ',' + first.p[0][1].toFixed(0) + ']') : ' (no det)'));
+    }
+    // The camera sensor is landscape (frame width > height), but in portrait
+    // mode the preview is rotated 90° to fill the tall screen. Detection
+    // coords come in the sensor's landscape frame, so we must rotate them
+    // 90° CW to match the portrait preview before scaling onto the canvas.
+    // Without this, boxes pile up at the top of the screen.
+    let rotate = false;
+    let fw = this._frameW, fh = this._frameH;
+    if (fw > fh && W < H) { rotate = true; const tmp = fw; fw = fh; fh = tmp; }
+    const rot = (fx, fy) => rotate ? [this._frameH - fy, fx] : [fx, fy];
+
+    // Cover-scaling: uniform scale (max axis ratio) + center offset, so the
+    // overlay matches the camera preview's crop-fill behavior.
+    const scale = Math.max(W / fw, H / fh);
+    const offX = (W - fw * scale) / 2;
+    const offY = (H - fh * scale) / 2;
+    const mx = (fx) => offX + fx * scale;
+    const my = (fy) => offY + fy * scale;
 
     const combatIds = new Set();
     if (this.data.snapshot) {
@@ -193,41 +244,43 @@ Page({
       if (t.misses > 0) stroke = '#888';  // stale
 
       const p = d.p;
+      const c = rot(d.c[0], d.c[1]);
+      const rp = [rot(p[0][0], p[0][1]), rot(p[1][0], p[1][1]), rot(p[2][0], p[2][1]), rot(p[3][0], p[3][1])];
       ctx.strokeStyle = stroke;
       ctx.lineWidth = t.visible ? 3 : 1.5;
       if (!t.visible) ctx.setLineDash([4, 4]);
       ctx.beginPath();
-      ctx.moveTo(p[0][0] * sx, p[0][1] * sy);
-      for (let i = 1; i < 4; i++) ctx.lineTo(p[i][0] * sx, p[i][1] * sy);
+      ctx.moveTo(mx(rp[0][0]), my(rp[0][1]));
+      for (let i = 1; i < 4; i++) ctx.lineTo(mx(rp[i][0]), my(rp[i][1]));
       ctx.closePath();
       ctx.stroke();
       ctx.setLineDash([]);
 
       ctx.fillStyle = stroke;
       ctx.beginPath();
-      ctx.arc(d.c[0] * sx, d.c[1] * sy, 4, 0, Math.PI * 2);
+      ctx.arc(mx(c[0]), my(c[1]), 4, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.font = 'bold 14px sans-serif';
       ctx.fillStyle = '#ffff88';
       ctx.fillText(((isBase && Number(id) === BASE_RED ? '红基地' : isBase ? '蓝基地' : 'id=' + d.id)),
-        d.c[0] * sx + 8, d.c[1] * sy - 8);
+        mx(c[0]) + 8, my(c[1]) - 8);
 
       // Highlight recently hit target: draw red glow on the overlay
       if (this.data.hitTargetId === Number(id)) {
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 4;
         ctx.beginPath();
-        ctx.moveTo(p[0][0] * sx, p[0][1] * sy);
-        for (let i = 1; i < 4; i++) ctx.lineTo(p[i][0] * sx, p[i][1] * sy);
+        ctx.moveTo(mx(rp[0][0]), my(rp[0][1]));
+        for (let i = 1; i < 4; i++) ctx.lineTo(mx(rp[i][0]), my(rp[i][1]));
         ctx.closePath();
         ctx.stroke();
       }
 
       // Floater positions are computed from the *t.current* detection coords
       // (in CSS px). Stored on tracker for the wxml layer.
-      t._screenX = d.c[0] * sx;
-      t._screenY = d.c[1] * sy;
+      t._screenX = mx(c[0]);
+      t._screenY = my(c[1]);
     }
 
     // Render floaters on the canvas (so they can drift past overlay bounds)

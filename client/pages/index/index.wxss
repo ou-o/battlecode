@@ -34,10 +34,16 @@
 .base-mini text { background: #2a3142; padding: 2rpx 10rpx; border-radius: 4rpx; font-size: 20rpx; color: #e0b84d; }
 .base-mini .dstr { color: #ff6b6b; opacity: 0.6; text-decoration: line-through; }
 
-.footer { position: absolute; bottom: 20rpx; left: 20rpx; right: 20rpx; display: flex; gap: 16rpx; }
-.attack-btn { flex: 1; background: #b4373b; color: white; border-radius: 16rpx; height: 100rpx; font-size: 32rpx; font-weight: 600; }
-.attack-btn[disabled] { background: #42485a; color: #999; }
-.toggle-btn { width: 140rpx; background: #2a3142; color: #dfe4ee; border-radius: 16rpx; height: 100rpx; font-size: 28rpx; }
+/* shutter button — camera-app style, circular white, bottom center */
+.shutter-wrap { position: absolute; bottom: 20rpx; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8rpx; }
+.shutter-btn { position: relative; width: 160rpx; height: 160rpx; padding: 0; margin: 0; background: transparent !important; border: none; line-height: normal; border-radius: 50%; }
+.shutter-btn::after { border: none; }
+.shutter-ring { position: absolute; inset: 0; border: 8rpx solid rgba(255,255,255,0.92); border-radius: 50%; box-sizing: border-box; }
+.shutter-core { position: absolute; inset: 22rpx; background: #ffffff; border-radius: 50%; box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.45); transition: transform 80ms; }
+.shutter-btn:active .shutter-core { transform: scale(0.86); }
+.shutter-btn.disabled .shutter-ring { border-color: rgba(255,255,255,0.35); }
+.shutter-btn.disabled .shutter-core { background: #cfd3da; }
+.shutter-label { font-size: 24rpx; color: #dfe4ee; text-shadow: 0 1rpx 4rpx rgba(0,0,0,0.8); }
 
 .banner { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); font-size: 80rpx; font-weight: 700; padding: 24rpx 60rpx; border-radius: 24rpx; pointer-events: none; }
 .banner.kill { background: rgba(0,0,0,0.55); color: #ffd56b; }

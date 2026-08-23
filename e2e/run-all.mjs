@@ -157,10 +157,10 @@ async function makePlayer({ code, name, faction, role, tagId }) {
 
   set('bind');
   // manual id path (skip camera/worker — not available in simulator)
-  await ev(() => getCurrentPages()[0].manualTagInput({ detail: { value: '5' } }));
+  await ev(() => getCurrentPages()[0].bindInput({ detail: { value: '5' } }));
   await sleep(150);
-  d = await pageData(); assert((d.bindingFoundIds || [])[0] === TAG_ME, 'manual id');
-  await ev(() => getCurrentPages()[0].confirmBinding());
+  d = await pageData(); assert(d.bindInput === '5', 'bindInput set');
+  await ev(() => getCurrentPages()[0].submitBind());
   let bound = false;
   for (let i = 0; i < 30; i++) { d = await pageData(); if (d.me && d.me.tagId === TAG_ME) { bound = true; break; } await sleep(100); }
   if (!bound) { d = await pageData(); fail('me.tagId not bound; me=' + JSON.stringify(d.me) + ' err=' + d.err); }

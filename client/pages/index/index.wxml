@@ -59,12 +59,13 @@
       </view>
     </view>
 
-    <!-- attack button -->
-    <view class="footer">
-      <button class="attack-btn" bindtap="attack" disabled="{{!myUnit || !myUnit.canAttack || !myUnit.alive}}">
-        攻击 {{myUnit && !myUnit.alive ? '(阵亡)' : ''}}
+    <!-- attack shutter button (camera-app style, circular white) -->
+    <view class="shutter-wrap">
+      <button class="shutter-btn {{(!myUnit || !myUnit.canAttack || !myUnit.alive) ? 'disabled' : ''}}" bindtap="attack" disabled="{{!myUnit || !myUnit.canAttack || !myUnit.alive}}">
+        <view class="shutter-ring"></view>
+        <view class="shutter-core"></view>
       </button>
-      <button class="toggle-btn" bindtap="toggle">{{running ? '暂停' : '继续'}}</button>
+      <view class="shutter-label">{{myUnit && !myUnit.alive ? '阵亡' : '攻击'}}</view>
     </view>
 
     <!-- banner / floaters / kill banner -->
