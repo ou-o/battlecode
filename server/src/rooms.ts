@@ -203,7 +203,7 @@ export function onlineCount(room: Room): number {
 }
 
 export const IDLE_ROOM_MS = 30 * 60 * 1000;        // 30 min if active players
-export const EMPTY_ONLINE_MS = 2 * 60 * 1000;      // 2 min if no online players
+export const EMPTY_ONLINE_MS = 5 * 60 * 1000;      // 5 min if no online players
 
 /** Returns codes of rooms reaped. */
 export function reapIdle(now = Date.now()): string[] {
