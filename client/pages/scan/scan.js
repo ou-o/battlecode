@@ -24,7 +24,6 @@ Page({
     this._ctx = null;
     this._canvasW = 0;
     this._canvasH = 0;
-    this._canvasReady = false;
     this._frameW = 0;
     this._frameH = 0;
 
@@ -34,10 +33,6 @@ Page({
   },
 
   onUnload() { this._teardown(); },
-
-  onReady() {
-    if (!this._canvasReady) this._initCanvas();
-  },
 
   onHide() {
     if (this._listener) this._listener.stop();
@@ -66,7 +61,6 @@ Page({
       this._updateTrackers(res.detections || []);
       this._frameW = res.width;
       this._frameH = res.height;
-      if (!this._canvasReady) this._initCanvas();
       this._fpsCount++;
       const now = Date.now();
       if (now - this._fpsLastTs >= 500) {
@@ -106,21 +100,17 @@ Page({
 
   _initCanvas() {
     const q = this.createSelectorQuery();
-    q.select('#overlay').fields({ node: true }).exec((res) => {
+    q.select('#overlay').fields({ node: true, size: true }).exec((res) => {
       if (!res || !res[0] || !res[0].node) return;
       const c = res[0].node;
-      const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
-      const w = info.windowWidth, h = info.windowHeight;
-      const dpr = info.pixelRatio || 2;
-      c.width = w * dpr;
-      c.height = h * dpr;
+      const dpr = (wx.getWindowInfo ? wx.getWindowInfo().pixelRatio : 2) || 2;
+      c.width = res[0].width * dpr;
+      c.height = res[0].height * dpr;
       this._canvas = c;
       this._ctx = c.getContext('2d');
       this._ctx.scale(dpr, dpr);
-      this._canvasW = w;
-      this._canvasH = h;
-      this._canvasReady = true;
-      this._drawOverlay();
+      this._canvasW = res[0].width;
+      this._canvasH = res[0].height;
     });
   },
 
@@ -148,18 +138,7 @@ Page({
     const W = this._canvasW, H = this._canvasH;
     ctx.clearRect(0, 0, W, H);
     if (!this._frameW || !this._frameH) return;
-    // Same alignment math as the battle page: rotate landscape sensor frames
-    // 90° CW for portrait preview, then cover-scale onto the canvas. See
-    // pages/index/index.js _drawOverlay for the full rationale.
-    let rotate = false;
-    let fw = this._frameW, fh = this._frameH;
-    if (fw > fh && W < H) { rotate = true; const tmp = fw; fw = fh; fh = tmp; }
-    const rot = (fx, fy) => rotate ? [this._frameH - fy, fx] : [fx, fy];
-    const scale = Math.max(W / fw, H / fh);
-    const offX = (W - fw * scale) / 2;
-    const offY = (H - fh * scale) / 2;
-    const mx = (fx) => offX + fx * scale;
-    const my = (fy) => offY + fy * scale;
+    const sx = W / this._frameW, sy = H / this._frameH;
 
     for (const id of Object.keys(this._trackers)) {
       const t = this._trackers[id];
@@ -168,26 +147,24 @@ Page({
       // 离线模式：统一用青色标注，可见实线、未确认虚线
       const stroke = t.visible ? '#00ff88' : '#888';
       const p = d.p;
-      const c = rot(d.c[0], d.c[1]);
-      const rp = [rot(p[0][0], p[0][1]), rot(p[1][0], p[1][1]), rot(p[2][0], p[2][1]), rot(p[3][0], p[3][1])];
       ctx.strokeStyle = stroke;
       ctx.lineWidth = t.visible ? 3 : 1.5;
       if (!t.visible) ctx.setLineDash([4, 4]);
       ctx.beginPath();
-      ctx.moveTo(mx(rp[0][0]), my(rp[0][1]));
-      for (let i = 1; i < 4; i++) ctx.lineTo(mx(rp[i][0]), my(rp[i][1]));
+      ctx.moveTo(p[0][0] * sx, p[0][1] * sy);
+      for (let i = 1; i < 4; i++) ctx.lineTo(p[i][0] * sx, p[i][1] * sy);
       ctx.closePath();
       ctx.stroke();
       ctx.setLineDash([]);
 
       ctx.fillStyle = stroke;
       ctx.beginPath();
-      ctx.arc(mx(c[0]), my(c[1]), 4, 0, Math.PI * 2);
+      ctx.arc(d.c[0] * sx, d.c[1] * sy, 4, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.font = 'bold 16px sans-serif';
       ctx.fillStyle = '#ffff88';
-      ctx.fillText('id=' + d.id, mx(c[0]) + 8, my(c[1]) - 8);
+      ctx.fillText('id=' + d.id, d.c[0] * sx + 8, d.c[1] * sy - 8);
     }
   },
 

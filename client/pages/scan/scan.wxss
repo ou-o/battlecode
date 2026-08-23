@@ -1,7 +1,7 @@
 .scan { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #000; }
 .cam-wrap { position: absolute; inset: 0; }
 .camera { width: 100%; height: 100%; }
-.overlay { position: absolute; inset: 0; pointer-events: none; }
+.overlay { position: absolute; left: 0; top: 0; width: 100vw; height: 100vh; pointer-events: none; }
 
 .hud-top { position: absolute; left: 20rpx; right: 20rpx; top: 20rpx; padding: 16rpx; border-radius: 16rpx; }
 .me-row { display: flex; align-items: center; gap: 12rpx; font-size: 22rpx; }
