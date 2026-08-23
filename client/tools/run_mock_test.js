@@ -89,7 +89,7 @@ async function createRoom(pw) {
   await wait(200);
   {
     const hitP = new Promise((res) => wsApi.on('event', (m) => m.e && m.e.t === 'hit' && res(m)));
-    wsApi.send('attack', { ids: [35] });          // 敌对蓝基地
+    wsApi.send('attack', { ids: [34] });          // 敌对蓝基地
     const hh = await Promise.race([hitP, wait(3000).then(() => null)]);
     check(hh && hh.e && hh.e.t === 'hit', '重连后攻击命中(拿到 hit 事件)');
   }

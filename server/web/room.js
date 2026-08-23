@@ -148,8 +148,8 @@ function renderClosed(reason) {
 $('btnBindBunkers').onclick = () => {
   const raw = $('bunkerIds').value.trim();
   if (!raw) { $('bunkerIds').focus(); return; }
-  const ids = raw.split(/[,\s]+/).map((x) => parseInt(x, 10)).filter((n) => !Number.isNaN(n) && n >= 24 && n <= 33);
-  if (!ids.length) { $('errText').textContent = '请填入 24–33 范围内的掩体 ID'; return; }
+  const ids = raw.split(/[,\s]+/).map((x) => parseInt(x, 10)).filter((n) => !Number.isNaN(n) && n >= 23 && n <= 32);
+  if (!ids.length) { $('errText').textContent = '请填入 23–32 范围内的掩体 ID'; return; }
   send('host:bunkers', { ids });
 };
 $('btnStart').onclick = () => send('host:start');

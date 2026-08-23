@@ -16,7 +16,7 @@ Page({
     me: null,
     phase: 'lobby',
     err: '',
-    // 绑定的 ID 输入框（0-23）
+    // 绑定的 ID 输入框（0-22）
     bindInput: '',
     ROLE_CN,
   },
@@ -121,19 +121,19 @@ Page({
     ws.send('role', { role: e.currentTarget.dataset.role });
   },
 
-  // ---- tag binding: 手动输入 ID (0-23) --------------------------------
+  // ---- tag binding: 手动输入 ID (0-22) --------------------------------
   bindInput(e) {
-    // 只保留数字，不超过两位，并在 0-23 内截断
+    // 只保留数字，不超过两位，并在 0-22 内截断
     let v = (e.detail.value || '').replace(/\D/g, '').slice(0, 2);
-    let id = v === '' ? '' : Math.min(23, parseInt(v, 10)).toString();
+    let id = v === '' ? '' : Math.min(22, parseInt(v, 10)).toString();
     this.setData({ bindInput: id });
   },
   submitBind() {
     const v = (this.data.bindInput || '').trim();
     if (v === '') { this.setData({ err: '请输入要绑定的 ID' }); return; }
     const id = parseInt(v, 10);
-    if (id < 0 || id > 23) {
-      this.setData({ err: 'ID 必须在 0-23 之间' });
+    if (id < 0 || id > 22) {
+      this.setData({ err: 'ID 必须在 0-22 之间' });
       return;
     }
     this.setData({ err: '' });

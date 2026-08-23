@@ -3,7 +3,7 @@ const ws = require('../../utils/ws.js');
 const detect = require('../../utils/detectWorker.js');
 
 const ROLE_CN = { assault: '突击兵', engineer: '工程师', sniper: '狙击手' };
-const BASE_RED = 34, BASE_BLUE = 35;
+const BASE_RED = 33, BASE_BLUE = 34;
 
 Page({
   data: {

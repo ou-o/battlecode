@@ -43,11 +43,11 @@
     <!-- bases -->
     <view class="bases">
       <view class="base red-base">
-        <text>红基地 id34</text>
+        <text>红基地 id33</text>
         <view class="bar"><view class="fill red" style="width:{{redBase ? redBase.hp / redBase.maxHp * 100 : 0}}%"></view><text wx:if="{{redBase}}"> {{redBase.hp}}/{{redBase.maxHp}}</text></view>
       </view>
       <view class="base blue-base">
-        <text>蓝基地 id35</text>
+        <text>蓝基地 id34</text>
         <view class="bar"><view class="fill blue" style="width:{{blueBase ? blueBase.hp / blueBase.maxHp * 100 : 0}}%"></view><text wx:if="{{blueBase}}"> {{blueBase.hp}}/{{blueBase.maxHp}}</text></view>
       </view>
     </view>

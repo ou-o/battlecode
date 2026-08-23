@@ -253,7 +253,7 @@ step("player disconnect + rejoin via token restores faction/role/tag + unit");
   check(u6 && u6.socketId === j2.me.socketId, "bound unit re-pointed to reconnected socket");
 
   const hitEv = new Promise((res) => onMsg(p2, (m) => m.t === "event" && m.e.t === "hit" && res(m)));
-  send(p2, { t: "attack", ids: [34] }); // enemy red base
+  send(p2, { t: "attack", ids: [33] }); // enemy red base
   const hh = await Promise.race([hitEv, wait(1500).then(() => null)]);
   check(hh?.e?.t === "hit", "reconnected player can attack");
 

@@ -104,11 +104,11 @@ function attackLoop(wsAlice) {
     if (i >= 12) {
       clearInterval(timer);
       tag(`alice issued ${aliceAttackedTimes} attacks on bob`);
-      // After bob dies alice should attack the enemy base (id 35 blue) 50 times to win.
+      // After bob dies alice should attack the enemy base (id 34 blue) 50 times to win.
       let j = 0;
       const t2 = setInterval(() => {
         j++;
-        wsAlice.send(JSON.stringify({ t: "attack", ids: [35] }));
+        wsAlice.send(JSON.stringify({ t: "attack", ids: [34] }));
         if (j >= 51) {
           clearInterval(t2);
           tag("alice exhausted base attacks");

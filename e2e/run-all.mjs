@@ -21,8 +21,8 @@ const PROJECT = '/Users/ruihanzhang/GitHub/battlecode/client';
 const HTTP_PORT = Number(process.env.BC_HTTP_PORT || 33287);
 const AUTO_PORT = Number(process.env.BC_AUTO_PORT || 9426);
 const TAG_ME = 5, TAG_BOB = 1, TAG_CAROL = 2;
-const BUNKERS = [24, 25];
-const BASE_RED = 34, BASE_BLUE = 35;
+const BUNKERS = [23, 24];
+const BASE_RED = 33, BASE_BLUE = 34;
 const RESPAWN_MS = 30000;
 
 let step = 'init';

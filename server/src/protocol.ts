@@ -156,11 +156,11 @@ export const BASE_MAX_HP = 500;
 export const RESPAWN_MS = 30000;
 
 export const PLAYER_ID_MIN = 0;
-export const PLAYER_ID_MAX = 23;
-export const BUNKER_ID_MIN = 24;
-export const BUNKER_ID_MAX = 33;
-export const BASE_RED_ID = 34;
-export const BASE_BLUE_ID = 35;
+export const PLAYER_ID_MAX = 22;
+export const BUNKER_ID_MIN = 23;
+export const BUNKER_ID_MAX = 32;
+export const BASE_RED_ID = 33;
+export const BASE_BLUE_ID = 34;
 
 export const MAX_PLAYERS = 12;
 export const MAX_BUNKERS = 10;

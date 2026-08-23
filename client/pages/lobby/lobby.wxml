@@ -66,9 +66,9 @@
 
     <view class="bc-card">
       <view class="sec-title">3. 绑定你的 AprilTag</view>
-      <view class="bc-muted">填写你拿到的那张 25h9 标签的 ID（0–23）。</view>
+      <view class="bc-muted">填写你拿到的那张 25h9 标签的 ID（0–22）。</view>
       <view class="bind-row">
-        <input class="bc-input" type="number" bindinput="bindInput" value="{{bindInput}}" placeholder="标签 ID (0-23)" maxlength="2" />
+        <input class="bc-input" type="number" bindinput="bindInput" value="{{bindInput}}" placeholder="标签 ID (0-22)" maxlength="2" />
         <button class="bc-btn success inline" bindtap="submitBind" disabled="{{bindInput === ''}}">{{me.tagId != null ? '重新绑定' : '绑定'}}</button>
       </view>
       <view wx:if="{{me.tagId != null}}" class="already-bound">已绑定 ID {{me.tagId}} ✓</view>

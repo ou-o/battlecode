@@ -231,8 +231,8 @@
     <ol class="steps">
       <li><strong>建房</strong> — 房主进入大厅，填写昵称并选择三位房间号，创建对局。</li>
       <li><strong>加入</strong> — 玩家在微信小程序输入房间号加入，选择阵营（红 / 蓝）与角色。</li>
-      <li><strong>绑标签</strong> — 用摄像头识别自己的 25h9 标签，绑定到游戏内 ID（0–23）。</li>
-      <li><strong>布防</strong> — 房主录入掩体标签（24–33），然后点击「开始游戏」。</li>
+      <li><strong>绑标签</strong> — 用摄像头识别自己的 25h9 标签，绑定到游戏内 ID（0–22）。</li>
+      <li><strong>布防</strong> — 房主录入掩体标签（23–32），然后点击「开始游戏」。</li>
       <li><strong>开战</strong> — 摄像头识别 + 点击攻击，上报识别到的对手 ID，每个被击目标扣 10 点血。</li>
       <li><strong>胜负</strong> — 击毁对方基地（500 HP）即获胜；己方基地被毁即失败。</li>
     </ol>
@@ -241,12 +241,12 @@
   <section class="card">
     <span class="sec-no">SEC.03</span>
     <h2>战术编码 · AprilTag ID 区段</h2>
-    <p class="muted">25h9 字典恰好覆盖 0–35，一区段一兵种，红蓝两色打印区分队伍。</p>
+    <p class="muted">25h9 字典支持 id 0–35，实物标签用到 0–34，一区段一兵种，红蓝两色打印区分队伍。</p>
     <div class="idmap">
-      <div class="idblk cyan"><div class="rng">00–23</div><div class="lbl">玩家 PLAYER</div></div>
-      <div class="idblk orange"><div class="rng">24–33</div><div class="lbl">掩体 BUNKER</div></div>
-      <div class="idblk red"><div class="rng">34</div><div class="lbl">红方基地</div></div>
-      <div class="idblk blue"><div class="rng">35</div><div class="lbl">蓝方基地</div></div>
+      <div class="idblk cyan"><div class="rng">00–22</div><div class="lbl">玩家 PLAYER</div></div>
+      <div class="idblk orange"><div class="rng">23–32</div><div class="lbl">掩体 BUNKER</div></div>
+      <div class="idblk red"><div class="rng">33</div><div class="lbl">红方基地</div></div>
+      <div class="idblk blue"><div class="rng">34</div><div class="lbl">蓝方基地</div></div>
     </div>
   </section>
 
@@ -269,7 +269,7 @@
       <tr><td>玩家 HP</td><td>100</td><td>约 10 次被击阵亡</td></tr>
       <tr><td>掩体 HP</td><td>2000</td><td>坚固工事，被击 200 次摧毁，本局不重生</td></tr>
       <tr><td>基地 HP</td><td>500</td><td>被击 50 次陷落，决定胜负</td></tr>
-      <tr><td>复活等待</td><td>30 秒</td><td>阵亡后到本方基地（id 34 红 / 35 蓝）拍标签复活</td></tr>
+      <tr><td>复活等待</td><td>30 秒</td><td>阵亡后到本方基地（id 33 红 / 34 蓝）拍标签复活</td></tr>
       <tr><td>玩家 / 掩体上限</td><td>12 / 10</td><td>MAX_PLAYERS / MAX_BUNKERS</td></tr>
     </table>
   </section>
