@@ -1,3 +1,4 @@
+<!-- battlecode项目开发：个人学习笔记分享 -->
 <!doctype html>
 <html lang="zh-CN">
 <head>
@@ -10,6 +11,7 @@
     --fg: #d4dde6; --muted: #7a8a9a; --line: #1e2c3a; --line2: #2a3d52;
     --cyan: #4dd8ff; --cyan-dim: #1a6b8a; --orange: #ff8c3b; --red: #ff4d5e;
     --blue: #3d9bff; --green: #3ddc97;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
     --font: "Rajdhani", "Bahnschrift", "DIN Alternate", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -41,6 +43,7 @@
     display: flex; justify-content: space-between; align-items: center;
     padding: 14px 0; border-bottom: 1px solid var(--line);
     font-size: 12px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted);
+    font-family: var(--mono);
   }
   .topbar .sig { display: flex; align-items: center; gap: 8px; }
   .topbar .dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
@@ -203,7 +206,7 @@
 
   <div class="topbar">
     <span class="sig"><span class="dot"></span>SERVER ONLINE · battlecode.site</span>
-    <span>NODE 18 · TS · WS</span>
+    <span>battlecode项目开发：个人学习笔记分享</span>
   </div>
 
   <header class="hero">
@@ -303,7 +306,6 @@
   </section>
 
   <section class="easter">
-    <span class="sec-no">SEC.08</span>
     <div class="cross">《真人CS》×</div>
     <div class="cross">《红色警戒真人版》×</div>
     <div class="cross ok">《零 濡鸦之巫女 moba版》✓</div>
