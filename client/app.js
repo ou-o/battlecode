@@ -1,7 +1,7 @@
 // app.js — BattleCode WeChat client. Holds the singleton WebSocket bridge
 // (utils/ws.js) and globalData (server URL, room, self binding).
 
-const DEFAULT_SERVER = 'ws://192.168.10.231:3000';
+const DEFAULT_SERVER = 'wss://battlecode.site';
 
 function normalizeUrl(v) {
   if (!v) return DEFAULT_SERVER;
