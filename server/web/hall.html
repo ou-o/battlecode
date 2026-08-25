@@ -20,8 +20,8 @@
     <div class="sub">房间总览 · 新建对局</div>
   </header>
 
-  <!-- 口令门户：输入口令才能进入大厅（服务端校验，不可绕过） -->
-  <section class="card gate-card" id="pwGate">
+  <!-- 口令门户：默认隐藏；仅当服务端仍要求口令（还原场景）时由 console.js 显示。 -->
+  <section class="card gate-card" id="pwGate" hidden>
     <span class="sec-no">SEC.AUTH</span>
     <h2>输入口令进入大厅</h2>
     <p class="muted">需要控制台口令以解锁房间总览与建房权限。口令由服务端校验，未通过接口与房间数据均不可访问。</p>

@@ -1,7 +1,7 @@
 // web/gate.js — 大厅 → 房间页 之间的校验页。
-// 口令已在大厅本地保存（bc_console_pw），这里只需房主 6 位验证码。
-// 连接 /console?pw&code&token 由服务端校验；返回 state 即通过 → 跳转
-// /room/:code?token=... 自动进入；返回 room:error 则提示（口令/验证码错误）。
+// 大厅口令已临时取消（服务端 BC_CONSOLE_OPEN=1），这里只需房主 6 位验证码即
+// 可进入房间。连接 /console?pw&code&token，服务端校验 code + hostToken(6位验证码)；
+// 返回 state 即通过 → 跳转 /room/:code?token=... 自动进入；返回 room:error 则提示。
 
 const $ = (id) => document.getElementById(id);
 const PW_KEY = 'bc_console_pw';
@@ -23,14 +23,6 @@ function main() {
   }
 
   const pw = localStorage.getItem(PW_KEY) || '';
-  if (!pw) {
-    // 从未在大厅输入过口令 → 先回大厅完成口令验证。
-    $('gateErr').textContent = '请先在大厅输入口令，再进入房间。';
-    $('codeInput').disabled = true;
-    $('btnEnter').disabled = true;
-    setTimeout(() => { location.href = '/hall.html'; }, 1600);
-    return;
-  }
 
   $('codeInput').addEventListener('input', () => {
     $('btnEnter').disabled = !/^\d{6}$/.test($('codeInput').value.trim());

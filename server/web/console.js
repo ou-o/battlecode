@@ -1,6 +1,7 @@
 // web/console.js — 大厅（房间总览）页面逻辑。
-// 口令门户 → 连接 /console 并校验口令（服务端强制，绕不开）→ 房间总览 + 建房。
-// 建房成功后重定向到 /room/:code?token=... ，房主可在房间页复制 token / 重进链接。
+// 大厅口令已临时取消（服务端 BC_CONSOLE_OPEN=1）：进入即自动连接 /console，
+// 免口令直接看房间总览 + 建房。若服务端重新启用口令，连接返回『口令错误』则
+// 自动回落到口令门户。建房成功后重定向到 /room/:code?token=... 。
 // 口令存 localStorage('bc_console_pw')，失效时清除并回到门户。
 
 const $ = (id) => document.getElementById(id);
@@ -18,7 +19,7 @@ let pollTimer = null;
 let closed = false;   // true：用户主动退出或口令失败，停止自动重连
 
 function main() {
-  // 进入按钮仅在输入非空时可用
+  // 进入按钮仅在输入非空时可用（服务端要求口令的还原场景仍可用）
   $('pwInput').addEventListener('input', () => {
     $('btnPwEnter').disabled = !($('pwInput').value.trim());
   });
@@ -29,9 +30,10 @@ function main() {
   if (stored) {
     $('pwInput').value = stored;
     $('btnPwEnter').disabled = false;
-    // 尝试用已存口令直接进入；失败会回到门户要求重输。
-    connectOverview();
   }
+  // 大厅口令已临时取消（服务端 BC_CONSOLE_OPEN=1）：始终尝试直接进入；
+  // 若服务端仍要求口令，连接会返回『口令错误』并自动回落到门户要求输入。
+  connectOverview();
 }
 
 function enterWithPw() {
@@ -55,10 +57,9 @@ function hideGate() {
 
 function connectOverview() {
   const pw = (localStorage.getItem(PW_KEY) || '').trim();
-  if (!pw) { showGate(); return; }
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   if (ws) { try { ws.close(); } catch {} }
-  ws = new WebSocket(`${proto}//${location.host}/console?pw=${encodeURIComponent(pw)}`);
+  ws = new WebSocket(`${proto}//${location.host}/console${pw ? `?pw=${encodeURIComponent(pw)}` : ''}`);
   ws.onopen = () => {
     $('setupErr').textContent = '';
     hideGate();

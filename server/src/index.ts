@@ -22,6 +22,10 @@ const WEB_DIR = path.resolve(__dirname, '..', 'web');
 const HOST = process.env.HOST ?? '0.0.0.0';
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
 const CONSOLE_PASSWORD = process.env.BC_CONSOLE_PW ?? 'ismism';
+// 大厅入口口令开关（临时开放用）：BC_CONSOLE_OPEN=1 时取消大厅入口口令，
+// 任何人可直接进入大厅（房间总览 + 建房，经 /console）。房间入口不受影响，
+// 仍由房主 6 位验证码（hostToken）保护。恢复：删除 / 改为 0 后重启服务即可。
+const CONSOLE_OPEN = process.env.BC_CONSOLE_OPEN === '1';
 
 const app = express();
 app.use(express.json());
@@ -68,16 +72,19 @@ wss.on('connection', (ws, req) => {
   const query = u.searchParams;
   const ctx: Ctx = { ws, id: sockIdOf(ws), room: null, isConsole };
 
-  // Console password gate. Reject any /console socket whose ?pw= doesn't
-  // match CONSOLE_PASSWORD before registering handlers or adding to ctxs.
-  if (isConsole) {
+  // 大厅口令开关开启（BC_CONSOLE_OPEN=1）时跳过口令校验；否则保留原逻辑。
+  // 房间入口校验（下方 code+token）不受此开关影响，始终强制 hostToken 匹配。
+  if (isConsole && !CONSOLE_OPEN) {
     const pw = query.get('pw');
     if (pw !== CONSOLE_PASSWORD) {
       send(ws, { t: 'room:error', message: '口令错误或缺失' });
       ws.close(4001, 'bad console password');
       return;
     }
-    // Host console reconnect: ?code=XXX&token=YYY attaches and replays state.
+  }
+  // Host console reconnect: ?code=XXX&token=YYY attaches and replays state.
+  // 房间入口口令（房主 6 位验证码 / hostToken）——始终校验，不加开关。
+  if (isConsole) {
     const code = query.get('code');
     const token = query.get('token');
     if (code && token) {
