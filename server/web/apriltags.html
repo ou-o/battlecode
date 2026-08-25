@@ -130,14 +130,15 @@
 
   /* ===== 标签网格 ===== */
   .taglist { margin-top: 26px; }
-  .taggrid { display: flex; flex-wrap: wrap; gap: 20px; }
-  .tag { text-align: center; page-break-inside: avoid; }
+  .taggrid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
+  .tag { text-align: center; page-break-inside: avoid; break-inside: avoid; }
   .tag .card {
     background: #fff; padding: 0.35cm; display: inline-block;
     border: 1px solid var(--line); box-shadow: 0 8px 26px rgba(0,0,0,.45);
+    page-break-inside: avoid; break-inside: avoid;
   }
   .tag .card img { display: block; width: 16cm; height: 16cm; image-rendering: auto; }
-  .tag figcaption { margin-top: 8px; font-family: var(--mono); font-size: 13px; letter-spacing: .12em; color: var(--cyan); }
+  .tag figcaption { margin-top: 8px; font-family: var(--mono); font-size: 13px; letter-spacing: .12em; color: var(--cyan); break-before: avoid; page-break-before: avoid; }
   .taggrid[data-size="12"] .card img { width: 12cm; height: 12cm; }
   .taggrid[data-size="8"]  .card img { width: 8cm;  height: 8cm; }
   .empty { color: var(--muted); text-align: center; padding: 40px 0; letter-spacing: .1em; }
