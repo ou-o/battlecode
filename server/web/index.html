@@ -73,8 +73,9 @@
   .tagline b { color: var(--fg); font-weight: 600; }
   .cta-row { display: flex; gap: 16px; justify-content: center; margin-top: 38px; flex-wrap: wrap; }
   .cta {
-    display: inline-flex; flex-direction: column; align-items: center;
-    padding: 15px 46px; font-size: 17px; font-weight: 700; letter-spacing: .12em;
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    flex: 1 1 0; min-width: 200px; text-align: center;
+    padding: 15px 24px; font-size: 17px; font-weight: 700; letter-spacing: .12em;
     clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
     transition: transform .15s, box-shadow .15s;
   }
