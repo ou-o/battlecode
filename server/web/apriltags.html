@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AprilTag 25h9 · 标签打印</title>
+<style>
+  :root {
+    --bg: #0a0f14; --bg2: #0d1319; --panel: #101820; --panel2: #151f2a;
+    --fg: #d4dde6; --muted: #7a8a9a; --line: #1e2c3a; --line2: #2a3d52;
+    --cyan: #4dd8ff; --cyan-dim: #1a6b8a; --orange: #ff8c3b; --red: #ff4d5e;
+    --blue: #3d9bff; --green: #3ddc97;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --font: "Rajdhani", "Bahnschrift", "DIN Alternate", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: var(--bg); color: var(--fg); line-height: 1.7; overflow-x: hidden;
+  }
+  /* ===== HUD 纹理层 ===== */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      linear-gradient(rgba(77,216,255,.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(77,216,255,.015) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,.08) 2px 4px);
+    mix-blend-mode: overlay;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; position: relative; z-index: 1; }
+
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 0; border-bottom: 1px solid var(--line);
+    font-size: 12px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted);
+    font-family: var(--mono); flex-wrap: wrap; gap: 8px;
+  }
+  .topbar .sig { display: flex; align-items: center; gap: 8px; }
+  .topbar .dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 50% { opacity: .4; } }
+  .topbar a.back { color: var(--cyan); }
+  .topbar a.back:hover { color: #fff; }
+
+  header.hero { text-align: center; padding: 46px 0 18px; }
+  .hero-tag {
+    display: inline-block; padding: 4px 14px; border: 1px solid var(--cyan-dim);
+    color: var(--cyan); font-size: 12px; letter-spacing: .3em; text-transform: uppercase;
+    margin-bottom: 18px; background: rgba(77,216,255,.04);
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  }
+  h1 {
+    font-size: clamp(28px, 5vw, 44px); font-weight: 800; letter-spacing: .08em; line-height: 1.1;
+    background: linear-gradient(180deg, #e8f4ff 20%, var(--cyan) 60%, var(--cyan-dim) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .tagline { color: var(--muted); font-size: 14px; margin-top: 12px; letter-spacing: .03em; }
+
+  section.card {
+    background: var(--panel); border: 1px solid var(--line);
+    padding: 26px 30px; margin: 20px 0; position: relative;
+    clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+  }
+  section.card::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: linear-gradient(180deg, var(--cyan), transparent);
+  }
+  .sec-no {
+    position: absolute; right: 26px; top: 18px; font-size: 13px; color: var(--line2);
+    letter-spacing: .2em; font-weight: 700;
+  }
+  h2 { font-size: 18px; margin-bottom: 18px; color: var(--cyan); letter-spacing: .14em; text-transform: uppercase; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+  h2::before { content: "//"; color: var(--cyan-dim); font-weight: 400; }
+
+  /* ===== 控制区 ===== */
+  .ctrl { display: grid; grid-template-columns: 1fr auto auto; gap: 28px; align-items: end; }
+  .ctrl .field > label { display: block; font-size: 11px; color: var(--muted); letter-spacing: .2em; text-transform: uppercase; margin-bottom: 12px; font-family: var(--mono); }
+  .readout { font-family: var(--mono); font-size: 14px; color: var(--cyan); letter-spacing: .06em; margin-top: 10px; }
+  .readout b { color: var(--orange); font-weight: 800; }
+
+  /* 范围滑块：两个原生 range 叠放，菱形把手 */
+  .slider { position: relative; height: 34px; min-width: 260px; }
+  .slider .track { position: absolute; left: 8px; right: 8px; top: 50%; height: 4px; margin-top: -2px; background: var(--line2); }
+  .slider .fill { position: absolute; height: 4px; top: 50%; margin-top: -2px; background: linear-gradient(90deg, var(--cyan-dim), var(--cyan)); box-shadow: 0 0 8px rgba(77,216,255,.35); }
+  .slider input[type="range"] {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    -webkit-appearance: none; appearance: none; background: transparent; pointer-events: none;
+  }
+  .slider input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: transparent; }
+  .slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; margin-top: -8px; pointer-events: auto;
+    width: 18px; height: 18px; background: var(--cyan);
+    border: 2px solid #0a0f14; outline: 1px solid var(--cyan);
+    transform: rotate(45deg); box-shadow: 0 0 12px rgba(77,216,255,.6); cursor: pointer;
+  }
+  .slider input[type="range"]::-moz-range-track { height: 4px; background: transparent; }
+  .slider input[type="range"]::-moz-range-thumb {
+    pointer-events: auto; width: 15px; height: 15px; background: var(--cyan);
+    border: 2px solid #0a0f14; outline: 1px solid var(--cyan);
+    box-shadow: 0 0 12px rgba(77,216,255,.6); cursor: pointer;
+  }
+
+  /* 尺寸切换 */
+  .sizes { display: flex; gap: 6px; }
+  .size {
+    cursor: pointer; padding: 9px 16px; border: 1px solid var(--line2);
+    background: var(--panel2); color: var(--muted); text-align: center;
+    font-family: var(--mono); transition: border-color .15s, color .15s;
+    clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  }
+  .size .sz { font-size: 14px; font-weight: 800; letter-spacing: .04em; }
+  .size .cm { display: block; font-size: 10px; letter-spacing: .15em; margin-top: 2px; }
+  .size:hover { border-color: var(--cyan-dim); color: var(--fg); }
+  .size.on { border-color: var(--cyan); color: var(--cyan); background: rgba(77,216,255,.06); box-shadow: 0 0 14px rgba(77,216,255,.18); }
+
+  .print-btn {
+    cursor: pointer; border: none; padding: 12px 30px; font-family: var(--font);
+    font-size: 15px; font-weight: 700; letter-spacing: .14em; color: #14100a;
+    background: linear-gradient(90deg, var(--orange), #ffb03b);
+    clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+    box-shadow: 0 6px 24px rgba(255,140,59,.3); transition: transform .15s, box-shadow .15s;
+  }
+  .print-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 34px rgba(255,140,59,.45); }
+  .print-btn small { display: block; font-weight: 400; font-size: 10px; letter-spacing: .2em; opacity: .8; margin-top: 2px; }
+
+  /* ===== 标签网格 ===== */
+  .taglist { margin-top: 26px; }
+  .taggrid { display: flex; flex-wrap: wrap; gap: 20px; }
+  .tag { text-align: center; page-break-inside: avoid; }
+  .tag .card {
+    background: #fff; padding: 0.35cm; display: inline-block;
+    border: 1px solid var(--line); box-shadow: 0 8px 26px rgba(0,0,0,.45);
+  }
+  .tag .card img { display: block; width: 16cm; height: 16cm; image-rendering: auto; }
+  .tag figcaption { margin-top: 8px; font-family: var(--mono); font-size: 13px; letter-spacing: .12em; color: var(--cyan); }
+  .taggrid[data-size="12"] .card img { width: 12cm; height: 12cm; }
+  .taggrid[data-size="8"]  .card img { width: 8cm;  height: 8cm; }
+  .empty { color: var(--muted); text-align: center; padding: 40px 0; letter-spacing: .1em; }
+
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding-top: 40px; letter-spacing: .2em; text-transform: uppercase; }
+  footer .bar { width: 60px; height: 2px; background: var(--line2); margin: 0 auto 14px; }
+
+  @media (max-width: 760px) {
+    .ctrl { grid-template-columns: 1fr; gap: 18px; }
+    .slider { min-width: 0; }
+    section.card { padding: 20px 18px; }
+    .sec-no { display: none; }
+  }
+
+  @media print {
+    html, body { background: #fff !important; color: #000; overflow: visible; }
+    body::before, body::after { display: none !important; }
+    .topbar, header.hero, footer, .no-print { display: none !important; }
+    .wrap { max-width: none; padding: 0; }
+    section.card { clip-path: none; border: none; background: none; padding: 0; margin: 0; }
+    section.card::before { display: none; }
+    section.card .sec-no { display: none; }
+    .taglist { margin-top: 0; }
+    .taggrid { gap: 0.8cm; }
+    .tag .card { border: none; box-shadow: none; padding: 0.4cm; }
+    .tag figcaption { color: #222; margin-top: 0.18cm; }
+    @page { margin: 1cm; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar no-print">
+    <span class="sig"><span class="dot"></span>APRILTAG 25H9 · 标签打印</span>
+    <a class="back" href="/" target="_blank">← 返回主页</a>
+  </div>
+
+  <header class="hero no-print">
+    <div class="hero-tag">PHYSICAL MARKERS · TAG 25H9</div>
+    <h1>APRILTAG 标签打印</h1>
+    <div class="tagline">选择 0–34 范围内的标签，按指定物理尺寸打印，供摄像头识别与对战使用。</div>
+  </header>
+
+  <section class="card no-print">
+    <span class="sec-no">SEC.01 · CONTROLS</span>
+    <h2>打印控制</h2>
+    <div class="ctrl">
+      <div class="field">
+        <label>ID 范围 0–34</label>
+        <div class="slider">
+          <div class="track"></div>
+          <div class="fill" id="fill"></div>
+          <input type="range" id="lo" min="0" max="34" value="0">
+          <input type="range" id="hi" min="0" max="34" value="34">
+        </div>
+        <div class="readout" id="readout"></div>
+      </div>
+      <div class="field">
+        <label>展示尺寸</label>
+        <div class="sizes" id="sizes">
+          <button class="size" data-size="16"><span class="sz">大</span><span class="cm">16 CM</span></button>
+          <button class="size" data-size="12"><span class="sz">中</span><span class="cm">12 CM</span></button>
+          <button class="size on" data-size="8"><span class="sz">小</span><span class="cm">8 CM</span></button>
+        </div>
+      </div>
+      <button class="print-btn" id="print">打印标签<small>PRINT → DIALOG</small></button>
+    </div>
+  </section>
+
+  <section class="taglist">
+    <div class="taggrid" id="grid" data-size="8"></div>
+  </section>
+
+  <footer>
+    <div class="bar"></div>
+    BATTLECODE · APRILTAG 25H9 PRINT UTILITY
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var lo = document.getElementById('lo');
+  var hi = document.getElementById('hi');
+  var fill = document.getElementById('fill');
+  var readout = document.getElementById('readout');
+  var grid = document.getElementById('grid');
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function render(a, b) {
+    grid.innerHTML = '';
+    for (var i = a; i <= b; i++) {
+      var id = pad(i);
+      var f = document.createElement('figure');
+      f.className = 'tag';
+      f.innerHTML =
+        '<div class="card"><img src="apriltags/tag25h9_' + id + '.png" alt="25h9 id ' + id +
+        '" loading="lazy"></div><figcaption>ID ' + id + '</figcaption>';
+      grid.appendChild(f);
+    }
+  }
+
+  function update() {
+    var a = parseInt(lo.value, 10);
+    var b = parseInt(hi.value, 10);
+    if (a > b) { var t = a; a = b; b = t; lo.value = a; hi.value = b; }
+    var pct = function (v) { return (v / 34 * 100); };
+    fill.style.left = pct(a) + '%';
+    fill.style.right = (100 - pct(b)) + '%';
+    readout.innerHTML = '范围 ' + pad(a) + ' – ' + pad(b) + ' · 共 <b>' + (b - a + 1) + '</b> 枚';
+    render(a, b);
+  }
+
+  lo.oninput = update;
+  hi.oninput = update;
+
+  var sizes = document.getElementById('sizes');
+  sizes.onclick = function (e) {
+    var btn = e.target.closest('.size');
+    if (!btn) return;
+    Array.prototype.forEach.call(sizes.children, function (b) { b.classList.remove('on'); });
+    btn.classList.add('on');
+    grid.setAttribute('data-size', btn.getAttribute('data-size'));
+  };
+
+  document.getElementById('print').onclick = function () { window.print(); };
+
+  update();
+})();
+</script>
+</body>
+</html>
