@@ -179,6 +179,9 @@
   .easter .cross { font-size: 15px; letter-spacing: .1em; margin: 6px 0; color: var(--muted); }
   .easter .cross.ok { color: var(--orange); font-weight: 700; font-size: 17px; }
   .easter .src { font-size: 12px; color: var(--line2); margin-top: 14px; letter-spacing: .15em; }
+  .easter .src a { color: var(--cyan-dim); text-decoration: none; letter-spacing: .02em;
+    border-bottom: 1px solid var(--line2); transition: color .2s, border-color .2s; }
+  .easter .src a:hover { color: var(--cyan); border-color: var(--cyan-dim); }
 
   .repo {
     display: inline-flex; align-items: center; gap: 10px; margin-top: 14px;
@@ -217,7 +220,7 @@
   <header class="hero">
     <div class="hero-tag">REAL-WORLD MOBA · APRILTAG 25H9</div>
     <div class="logo">BATTLECODE</div>
-    <div class="tagline">手机摄像头识别物理标签 → WebSocket 实时上报 → 服务端结算血量 / 复活 / 胜负<br><b>真人实时的实物 MOBA 对战</b></div>
+    <div class="tagline">识别 → 拍摄 → 造成伤害<br><b>保护好你的二维码！</b></div>
     <div class="cta-row">
       <a class="cta cta-primary" href="/hall.html">进入游戏大厅<small>DEPLOY TO HALL</small></a>
       <a class="cta cta-ghost" href="apriltags.html" target="_blank" rel="noopener">标签打印<small>PRINT TAGS · 25H9</small></a>
@@ -227,34 +230,34 @@
   <section class="card">
     <span class="sec-no">SEC.01</span>
     <h2>这是什么</h2>
-    <p>BattleCode 是一款把<b>实体标签 + 摄像头识别 + 实时对战</b>结合起来的类 MOBA 游戏。
-    玩家通过微信小程序用摄像头识别印有 <span class="tag">AprilTag 25h9</span> 的实体标签，
-    识别结果实时上报服务端，由服务端完成血量结算、阵亡复活、掩体摧毁与基地胜负判定。</p>
-    <p class="muted">核心玩法：识别自己的标签 ≈ 操作角色，把识别到的对手标签上报 ≈ 发动攻击。</p>
+    <p>BattleCode 骑码打仗 是一款把<b>实体标签 + 摄像头识别 + 真人对战</b>结合起来的类 MOBA 游戏。
+    玩家通过微信小程序加入游戏，用摄像头识别印有 <span class="tag">AprilTag 25h9</span> 的实体标签，
+    用拍摄代替攻击，推进战线，直至摧毁敌人的基地。</p>
+    <p class="muted">需打印：<span class="tag">AprilTag 25h9</span> 实体标签，贴在硬质板材上，固定佩戴于玩家头部或胸部。</p>
   </section>
 
   <section class="card">
     <span class="sec-no">SEC.02</span>
     <h2>玩法流程</h2>
     <ol class="steps">
-      <li><strong>建房</strong> — 房主进入大厅，填写昵称并选择三位房间号，创建对局。</li>
-      <li><strong>加入</strong> — 玩家在微信小程序输入房间号加入，选择阵营（红 / 蓝）与角色。</li>
-      <li><strong>绑标签</strong> — 用摄像头识别自己的 25h9 标签，绑定到游戏内 ID（0–22）。</li>
-      <li><strong>布防</strong> — 房主录入掩体标签（23–32），然后点击「开始游戏」。</li>
-      <li><strong>开战</strong> — 摄像头识别 + 点击攻击，上报识别到的对手 ID，每个被击目标扣 10 点血。</li>
-      <li><strong>胜负</strong> — 击毁对方基地（500 HP）即获胜；己方基地被毁即失败。</li>
+      <li><strong>建房</strong> — 房主创建对局。玩家在微信小程序输入房间号加入。</li>
+      <li><strong>选角</strong> — 玩家选择阵营与角色，并录入自己佩戴的标签 ID（0–22）。</li>
+      <li><strong>布防</strong> — 房主录入掩体标签 ID（23–32），然后点击「开始游戏」。</li>
+      <li><strong>开战</strong> — 瞄得要准、跟拍要稳，战术配合、思路打开。</li>
+      <li><strong>推进</strong> — 掩体被摧毁后需撤下。玩家被击杀后需返回基地等待复活。</li>
+      <li><strong>胜负</strong> — 率先摧毁对手基地的一方获得胜利。</li>
     </ol>
   </section>
 
   <section class="card">
     <span class="sec-no">SEC.03</span>
     <h2>战术编码 · AprilTag ID 区段</h2>
-    <p class="muted">25h9 字典支持 id 0–35，实物标签用到 0–34，一区段一兵种，红蓝两色打印区分队伍。</p>
+    <p class="muted">25h9 字典包含 35 个不同的标签，ID 0–34，打印时可考虑红蓝两色以区分队伍。</p>
     <div class="idmap">
       <div class="idblk cyan"><div class="rng">00–22</div><div class="lbl">玩家 PLAYER</div></div>
       <div class="idblk orange"><div class="rng">23–32</div><div class="lbl">掩体 BUNKER</div></div>
-      <div class="idblk red"><div class="rng">33</div><div class="lbl">红方基地</div></div>
-      <div class="idblk blue"><div class="rng">34</div><div class="lbl">蓝方基地</div></div>
+      <div class="idblk red"><div class="rng">33</div><div class="lbl">红方基地 RED BASE</div></div>
+      <div class="idblk blue"><div class="rng">34</div><div class="lbl">蓝方基地 BLUE BASE</div></div>
     </div>
   </section>
 
@@ -284,29 +287,21 @@
 
   <section class="card">
     <span class="sec-no">SEC.06</span>
-    <h2>作战路线图</h2>
+    <h2>开发节奏</h2>
     <div class="road">
       <div class="road-item done">
-        <div class="rt">已上线 · 核心闭环</div>
-        <p><b>房间生命周期 / 房主控制台 / 小程序客户端 / 攻击结算 / 死亡复活 / 基地胜负 / 个人战绩统计</b>，含端到端冒烟测试。</p>
+        <div class="rt">当前进行 · 核心功能闭环</div>
+        <p><b>房主控制台 / 小程序正式版 / 基本游戏交互 / 个人战绩统计</b>，内部测试收集问题、调整数值。</p>
       </div>
       <div class="road-item">
-        <div class="rt">进行中 · P1 玩法扩展</div>
-        <p><b>角色特性差异化</b>（突击回血 / 工程师破掩体 / 狙击充能）、治疗量统计、基地车推进、占点复活。</p>
+        <div class="rt">下一阶段 · 玩法扩展</div>
+        <p><b>角色特性差异化</b>（突击回血 / 工程师破掩体 / 狙击充能）、基地车推进规则、占领规则。</p>
       </div>
       <div class="road-item">
-        <div class="rt">规划中 · P2 体验深化</div>
-        <p><b>手机防御塔单位</b>、弹药换弹机制、部位/距离差异化伤害、实时地图观战、技能大招系统。</p>
+        <div class="rt">未来规划 · 体验深化</div>
+        <p><b>手机防御塔单位</b>、弹药换弹机制、部位/距离差异化伤害、技能与大招。</p>
       </div>
     </div>
-  </section>
-
-  <section class="card">
-    <span class="sec-no">SEC.07</span>
-    <h2>如何游玩</h2>
-    <p><strong>房主：</strong>进入大厅建房、录入掩体、开始游戏，在房间页实时观察战斗。</p>
-    <p><strong>玩家：</strong>使用微信开发者工具打开 <span class="tag">client/</span> 目录（AprilTag wasm 已预编译），在小程序端「加入对局」页输入房间号加入。</p>
-    <p class="muted">浏览器端点仅供房主观察与指挥；玩家的实际对战操作发生在微信小程序端。</p>
     <a class="repo" href="https://github.com/ou-o/battlecode"><span class="gh">⌥</span> github.com/ou-o/battlecode</a>
   </section>
 
@@ -314,7 +309,7 @@
     <div class="cross">《真人CS》×</div>
     <div class="cross">《红色警戒真人版》×</div>
     <div class="cross ok">《零 濡鸦之巫女 moba版》✓</div>
-    <div class="src">— 项目灵感 · 未明子 —</div>
+    <div class="src">— 项目灵感 · <a href="https://www.bilibili.com/opus/1218868219219017747?spm_id_from=333.1387.0.0" target="_blank" rel="noopener">未明子</a> —</div>
   </section>
 
   <footer>
