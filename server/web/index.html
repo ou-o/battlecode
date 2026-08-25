@@ -194,6 +194,10 @@
     letter-spacing: .2em; text-transform: uppercase;
   }
   footer .bar { width: 60px; height: 2px; background: var(--line2); margin: 0 auto 16px; }
+  footer .beian { color: var(--muted); text-decoration: none; display: inline-flex;
+    align-items: center; gap: 6px; transition: color .2s; }
+  footer .beian:hover { color: var(--cyan-dim); }
+  footer .beian-ico { height: 16px; width: auto; vertical-align: middle; }
 
   @media (max-width: 640px) {
     header.hero { padding: 60px 0 50px; }
@@ -316,7 +320,7 @@
 
   <footer>
     <div class="bar"></div>
-    BATTLECODE · NODE.JS + WEBSOCKET 实时对战服务端
+    <a class="beian" href="https://beian.mps.gov.cn/#/query/webSearch?code=51010602003630" rel="noreferrer" target="_blank"><img class="beian-ico" src="/beian.png" alt="">川公网安备51010602003630号</a>
   </footer>
 
 </div>
