@@ -148,12 +148,14 @@ Page({
       const t = this._trackers[id];
       const d = t.lastDet;
       if (!d) continue;
+      // 只绘制确认可见的 tracker：未确认的瞬时误检与已丢失的（含闪烁型
+      // 误检反复清零 miss 的情况）一律不画，杜绝虚线残框。
+      if (!t.visible) continue;
       // 离线模式：统一用青色标注，可见实线、未确认虚线
-      const stroke = t.visible ? '#00ff88' : '#888';
+      const stroke = '#00ff88';
       const p = d.p;
       ctx.strokeStyle = stroke;
-      ctx.lineWidth = t.visible ? 3 : 1.5;
-      if (!t.visible) ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(p[0][0] * sx, p[0][1] * sy);
       for (let i = 1; i < 4; i++) ctx.lineTo(p[i][0] * sx, p[i][1] * sy);
