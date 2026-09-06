@@ -156,8 +156,12 @@ Page({
         if (t.count >= CONFIRM && !t.visible) t.visible = true;
       } else {
         t.count = 0; t.misses++;
-        if (t.misses >= DROP) t.visible = false;
+        if (t.misses >= DROP) t.visible = false;   // 灰色虚线宽限期
       }
+    }
+    // 宽限期（DROP×2 帧无识别）后整条删除，避免残框/ID 冻结在画面上
+    for (const id of Object.keys(this._trackers)) {
+      if (this._trackers[id].misses >= DROP * 2) delete this._trackers[id];
     }
     for (const id of cur) if (!this._trackers[id]) this._trackers[id] = { id, count: 1, misses: 0, visible: false, lastDet: byId[id] };
   },
