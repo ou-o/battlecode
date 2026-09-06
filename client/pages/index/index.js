@@ -25,7 +25,7 @@ Page({
     respawnReady: false,  // 30s elapsed, awaiting拍基地
     bannerText: '',       // 临时横幅文案（击杀/胜利等）
     bannerClass: '',
-    floaters: [],         // 飘字 {id, x, y, text, color, ttl, expires}
+    floaters: [],         // 飘字 {id, tgt, x, y, text, color, ttl, expires}
     hitTargetId: null,    // 当前帧高亮的被击目标 id (canvas红框)
     endedOverlay: false,
     winnerText: '',
@@ -78,6 +78,7 @@ Page({
     (this._unsubs || []).forEach((u) => u && u());
     if (this._respawnTicker) clearInterval(this._respawnTicker);
     if (this._floatersTick) clearInterval(this._floatersTick);
+    if (this._hitGlowTimer) { clearTimeout(this._hitGlowTimer); this._hitGlowTimer = null; }
   },
   onHide() {
     if (this._listener) this._listener.stop();
@@ -188,6 +189,10 @@ Page({
       const t = this._trackers[id];
       const d = t.lastDet;
       if (!d) continue;
+      // 只绘制确认可见的 tracker：未确认的瞬时误检与已丢失的（含闪烁型
+      // 误检反复清零 miss 的情况）一律不画，杜绝虚线残框。攻击判定本来
+      // 就只认 visible，无功能影响。
+      if (!t.visible) continue;
 
       // Is this a "live" combatant?
       const myId = this.data.myUnit?.id;
@@ -203,8 +208,7 @@ Page({
 
       const p = d.p;
       ctx.strokeStyle = stroke;
-      ctx.lineWidth = t.visible ? 3 : 1.5;
-      if (!t.visible) ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(p[0][0] * sx, p[0][1] * sy);
       for (let i = 1; i < 4; i++) ctx.lineTo(p[i][0] * sx, p[i][1] * sy);
@@ -241,13 +245,19 @@ Page({
 
     // Render floaters on the canvas (so they can drift past overlay bounds)
     const floaters = this.data.floaters || [];
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'center';
     for (const f of floaters) {
-      ctx.font = 'bold 20px sans-serif';
       ctx.globalAlpha = Math.max(0, Math.min(1, (f.expires - Date.now()) / f.ttl));
       ctx.fillStyle = f.color;
-      ctx.fillText(f.text, f.x, f.y - f.lift);
-      ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+      ctx.lineWidth = 3;
+      const fy = f.y - f.lift;
+      ctx.strokeText(f.text, f.x, fy);
+      ctx.fillText(f.text, f.x, fy);
     }
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'left';
   },
 
   // ---- Attack action -----
@@ -301,6 +311,7 @@ Page({
     let redBase = null, blueBase = null;
     for (const u of snapshot.units) {
       if (u.kind === 'player') {
+        if (myUnit && u.id === myUnit.id) continue;  // 自己的血条在顶部 HUD，不进友方栏
         if (u.faction === myUnit?.faction) friends.push(u);
         else enemies.push(u);
       } else if (u.kind === 'bunker') bunkers.push(u);
@@ -338,16 +349,13 @@ Page({
   _onEvent(env) {
     const e = env.e;
     const myId = this.data.myUnit?.id;
-    // hit floaters: only the attacker sees "+10" drift above tgt id tracking box
+    // hit floaters: only the attacker sees the drift above tgt id tracking box
     if (e.t === 'hit' && e.src === myId) {
-      // find screen position
-      const t = this._trackers[String(e.tgt)];
-      const x = t?._screenX ?? this._canvasW / 2;
-      const y = t?._screenY ?? this._canvasH / 2;
-      const floaters = (this.data.floaters || []).slice();
-      floaters.push({ id: Math.random(), x, y, lift: 0, text: '+' + e.dmg, color: '#ffd56b', ttl: 900, expires: Date.now() + 900 });
-      this.setData({ floaters, hitTargetId: e.tgt });
-      setTimeout(() => { if (this.data.hitTargetId === e.tgt) this.setData({ hitTargetId: null }); }, 800);
+      // Bases get their floater from the 'baseHit' event (server emits both
+      // 'hit' and 'baseHit' for the same attack) — skip here to avoid doubling.
+      if (e.tgt !== BASE_RED && e.tgt !== BASE_BLUE) {
+        this._pushFloater(e.tgt, '-' + e.dmg, '#ff8a8a');
+      }
     }
     if (e.t === 'kill' && e.src === myId) {
       this._banner('击杀 id' + e.tgt, 'kill');
@@ -363,20 +371,55 @@ Page({
       if (e.src === myId) this._banner('摧毁掩体 id' + e.id, 'bunker');
     }
     if (e.t === 'baseHit') {
-      // optional: subtle floaters when attacker
+      // base damage: server sends both 'hit' and 'baseHit' for the same attack —
+      // here we only show the baseHit floater (hit's floater is suppressed via
+      // same-tick dedupe) so the number doesn't double up.
       if (e.src === myId) {
-        const t = this._trackers[String(e.id)];
-        const x = t?._screenX ?? this._canvasW / 2;
-        const y = t?._screenY ?? this._canvasH / 2;
-        const floaters = (this.data.floaters || []).slice();
-        floaters.push({ id: Math.random(), x, y, lift: 0, text: '-10', color: '#ff8a8a', ttl: 900, expires: Date.now() + 900 });
-        this.setData({ floaters, hitTargetId: e.id });
-        setTimeout(() => { if (this.data.hitTargetId === e.id) this.setData({ hitTargetId: null }); }, 800);
+        this._pushFloater(e.id, '-10', '#ff8a8a');
       }
     }
     if (e.t === 'gameOver') {
       this.setData({ endedOverlay: true, winnerText: (e.winner === 'red' ? '红方胜利' : '蓝方胜利') });
     }
+  },
+
+  // ---- Floaters (damage numbers) -----
+  // 同一目标短时间内只保留一个飘字并叠加伤害数字，避免连打时叠罗汉;
+  // 每个目标的活跃飘字错开水平偏移，多个目标同时受击也不挤在一条线上。
+  _pushFloater(tgtId, text, color) {
+    const now = Date.now();
+    const ttl = 900;
+    const list = (this.data.floaters || []).filter((f) => f.expires > now);
+    // Merge into an existing live floater on the same target: stack the amount.
+    const prev = list.find((f) => f.tgt === tgtId && now - f.born < 700);
+    if (prev) {
+      prev.amount += parseInt(text.slice(1), 10) || 0;
+      prev.text = '-' + prev.amount;
+      prev.born = now;
+      prev.ttl = ttl;
+      prev.expires = now + ttl;
+      prev.lift = 0;
+      this.setData({ floaters: list });
+    } else {
+      // Fan out per live floater on the SAME target (they share one anchor).
+      const n = list.filter((f) => f.tgt === tgtId).length;
+      const t = this._trackers[String(tgtId)];
+      const anchorY = (t?._screenY ?? this._canvasH / 2) - 26; // above the id label
+      const x = Math.min(Math.max(t?._screenX ?? this._canvasW / 2, 30), this._canvasW - 30) + (n % 3) * 14;
+      list.push({ id: Math.random(), tgt: tgtId, x, y: anchorY, lift: 0, text, amount: parseInt(text.slice(1), 10) || 0, color, ttl, born: now, expires: now + ttl });
+      this.setData({ floaters: list });
+    }
+    if (this.data.hitTargetId !== tgtId) {
+      this.setData({ hitTargetId: tgtId });
+    }
+    // Restart the glow timer on every hit so continuous fire keeps the box lit;
+    // a single clearTimeout/setTimeout pair also prevents stale-timer pile-up
+    // when switching between targets quickly.
+    if (this._hitGlowTimer) clearTimeout(this._hitGlowTimer);
+    this._hitGlowTimer = setTimeout(() => {
+      this._hitGlowTimer = null;
+      this.setData({ hitTargetId: null });
+    }, 800);
   },
 
   _banner(text, cls) {
