@@ -153,7 +153,7 @@ export const DAMAGE_PER_HIT = 10;
 export const PLAYER_MAX_HP = 100;
 export const BUNKER_MAX_HP = 2000;
 export const BASE_MAX_HP = 500;
-export const RESPAWN_MS = 30000;
+export const RESPAWN_MS = 15000;
 
 export const PLAYER_ID_MIN = 0;
 export const PLAYER_ID_MAX = 22;

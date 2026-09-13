@@ -57,7 +57,12 @@
 .dead-title { font-size: 64rpx; font-weight: 700; }
 .dead-sub { font-size: 28rpx; color: #dfe4ee; margin-top: 16rpx; }
 .dead-counter { font-size: 80rpx; font-weight: 700; color: #ffd56b; margin-top: 24rpx; }
-.revive-btn { margin-top: 24rpx; background: #6bd96b; color: #0c0e14; border-radius: 12rpx; padding: 18rpx 32rpx; font-size: 28rpx; }
+/* 扫描态：减淡蒙层露出摄像头与基地识别框，面板沉底不挡中央瞄准区 */
+.dead-overlay.scan { background: rgba(0,0,0,0.35); align-items: flex-end; padding-bottom: calc(220rpx + env(safe-area-inset-bottom)); }
+.dead-overlay.scan .dead-inner { background: rgba(12,14,20,0.72); border-radius: 16rpx; padding: 28rpx 40rpx; }
+.scan-progress { width: 360rpx; height: 12rpx; background: rgba(255,255,255,0.18); border-radius: 6rpx; overflow: hidden; margin: 24rpx auto 0; }
+.scan-fill { height: 100%; background: #6bd96b; border-radius: 6rpx; transition: width 0.2s linear; }
+.scan-label { font-size: 26rpx; color: #dfe4ee; margin-top: 16rpx; }
 
 .end-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; }
 .end-inner { text-align: center; }

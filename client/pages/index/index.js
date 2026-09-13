@@ -4,6 +4,7 @@ const detect = require('../../utils/detectWorker.js');
 
 const ROLE_CN = { assault: '突击兵', engineer: '工程师', sniper: '狙击手' };
 const BASE_RED = 33, BASE_BLUE = 34;
+const BASE_SCAN_CONFIRM_MS = 1000;   // 对准己方基地标签连续识别该时长后自动复活
 
 Page({
   data: {
@@ -22,7 +23,8 @@ Page({
     redBase: null,
     blueBase: null,
     respawnRemain: 0,
-    respawnReady: false,  // 30s elapsed, awaiting拍基地
+    respawnReady: false,  // 15s elapsed, awaiting base-tag scan
+    scanPct: 0,           // 基地标签连续识别进度 0-100，满格自动复活
     bannerText: '',       // 临时横幅文案（击杀/胜利等）
     bannerClass: '',
     floaters: [],         // 飘字 {id, tgt, x, y, text, color, ttl, expires}
@@ -50,6 +52,8 @@ Page({
     this._respawnTicker = null;
     this._floatersTick = null;
     this._myLastHp = null;   // for detecting respawn/round-start shocks
+    this._scanSince = null;  // 基地标签开始连续可见的时刻
+    this._scanFired = false; // 本轮瞄准是否已上报复活（防重复发送）
 
     this._initWorker();
     this._initCamera();
@@ -102,6 +106,7 @@ Page({
       }
       if (res.type !== 'dets') return;
       this._updateTrackers(res.detections || []);
+      this._updateBaseScan();
       this._frameW = res.width;
       this._frameH = res.height;
       this._fpsCount++;
@@ -296,10 +301,35 @@ Page({
     wx.vibrateShort({ type: 'light' });
   },
 
-  respawnAtBase() {
-    if (!this.data.myUnit || !this.data.myUnit.faction) return;
-    const baseId = this.data.myUnit.faction === 'red' ? BASE_RED : BASE_BLUE;
-    ws.send('respawn', { baseId });
+  // ---- Base-tag scan respawn -----
+  // 死亡且复活倒计时结束后，镜头连续 BASE_SCAN_CONFIRM_MS 识别到己方基地
+  // 标签（tracker.visible，与攻击判定同一标准）即自动上报复活；识别中断则
+  // 进度清零，重新对准可再次触发（服务端冷却为权威，被拒后允许重试）。
+  _updateBaseScan() {
+    const u = this.data.myUnit;
+    if (!u || u.alive || !u.faction || !this.data.respawnReady) { this._resetBaseScan(); return; }
+    const baseId = u.faction === 'red' ? BASE_RED : BASE_BLUE;
+    const t = this._trackers[String(baseId)];
+    if (!t || !t.visible) { this._resetBaseScan(); return; }
+    if (this._scanSince == null) {
+      this._scanSince = Date.now();
+      wx.vibrateShort({ type: 'light' });   // 识别到位提示
+    }
+    const held = Date.now() - this._scanSince;
+    const pct = Math.min(100, Math.round((held / BASE_SCAN_CONFIRM_MS) * 100));
+    if (pct !== this.data.scanPct) this.setData({ scanPct: pct });
+    if (this._scanFired) return;
+    if (held >= BASE_SCAN_CONFIRM_MS) {
+      this._scanFired = true;
+      wx.vibrateShort({ type: 'medium' });
+      ws.send('respawn', { baseId });
+    }
+  },
+
+  _resetBaseScan() {
+    this._scanSince = null;
+    this._scanFired = false;
+    if (this.data.scanPct) this.setData({ scanPct: 0 });
   },
 
   // ---- WS state updates -----
@@ -337,12 +367,14 @@ Page({
       this._startRespawnTicker(myUnit.respawnReadyAt);
     } else {
       this._stopRespawnTicker();
+      this._resetBaseScan();
       if (myUnit) this.setData({ respawnRemain: 0, respawnReady: myUnit.alive ? false : (myUnit.respawnReadyAt == null) });
     }
 
     // If hp increased unexpectedly (respawn) reset bringup state
     if (prev && myUnit && prev.hp === 0 && myUnit.hp > 0) {
       this.setData({ respawnReady: false });
+      this._resetBaseScan();
     }
   },
 
@@ -446,6 +478,7 @@ Page({
     const tick = () => {
       const remain = Math.max(0, Math.ceil((time - Date.now()) / 1000));
       this.setData({ respawnRemain: remain, respawnReady: remain === 0 && !this.data.myUnit?.alive });
+      this._updateBaseScan();
     };
     tick();
     this._respawnTicker = setInterval(tick, 250);

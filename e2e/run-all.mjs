@@ -23,7 +23,7 @@ const AUTO_PORT = Number(process.env.BC_AUTO_PORT || 9426);
 const TAG_ME = 5, TAG_BOB = 1, TAG_CAROL = 2;
 const BUNKERS = [23, 24];
 const BASE_RED = 33, BASE_BLUE = 34;
-const RESPAWN_MS = 30000;
+const RESPAWN_MS = 15000;
 
 let step = 'init';
 const log = (m) => process.stdout.write('[' + step + '] ' + m + '\n');
@@ -208,17 +208,29 @@ async function makePlayer({ code, name, faction, role, tagId }) {
   d = await pageData(); assert(d.respawnRemain > 0, 'respawn cd'); log('player dead remain=' + d.respawnRemain);
 
   set('wait-respawn'); armWatchdog(70000);
-  log('waiting ~30s for respawn');
+  log('waiting ~15s for respawn');
   let ready = false;
   for (let i = 0; i < (RESPAWN_MS / 1000) + 30; i++) { d = await pageData(); if (d.respawnReady === true) { ready = true; break; } await sleep(1000); }
   if (!ready) fail('respawn not ready'); log('respawn ready');
 
   set('revive'); armWatchdog(30000);
-  await ev(() => { const ps = getCurrentPages(); ps[ps.length - 1].respawnAtBase(); });
+  // 负向：镜头里没有己方基地标签（tracker 不可见）时不得自动复活
+  await sleep(1500);
+  d = await pageData(); assert(d.myUnit && !d.myUnit.alive, 'no auto-respawn without base tag');
+  // 正向：持续注入红基地(33)可见 tracker，跨过 ~1s 连续识别阈值后应自动复活。
+  // 暖管线下空 dets 约 150ms 就会丢弃注入的 tracker，因此每 ~110ms 重注入
+  // （与下方打基地步骤同一手法），保持 visible 连续不中断。
+  const injectBase = () => ev((id) => { const ps = getCurrentPages(); const p = ps[ps.length - 1]; p._trackers[String(id)] = { id, count: 99, misses: 0, visible: true, lastDet: { id, c: [100, 100], p: [[80, 80], [120, 80], [120, 120], [80, 120]] } }; }, BASE_RED);
   let revived = false;
-  for (let i = 0; i < 40; i++) { d = await pageData(); if (d.myUnit && d.myUnit.alive && d.myUnit.hp > 0) { revived = true; break; } await sleep(120); }
-  if (!revived) fail('not revived');
-  d = await pageData(); assert(d.bannerText === '已复活', 'revive banner'); log('revived hp=' + d.myUnit.hp);
+  for (let i = 0; i < 20 && !revived; i++) {
+    await injectBase();
+    await sleep(110);
+    d = await pageData(); revived = !!(d.myUnit && d.myUnit.alive && d.myUnit.hp > 0);
+  }
+  if (!revived) fail('auto-respawn did not fire');
+  let revivedBanner = false;
+  for (let i = 0; i < 8; i++) { d = await pageData(); if (d.bannerText === '已复活') { revivedBanner = true; break; } await sleep(150); }
+  assert(revivedBanner, 'revive banner'); log('auto-revived hp=' + d.myUnit.hp);
 
   set('win'); armWatchdog(90000);
   // Re-inject the base tracker each iteration: by this point in a run the

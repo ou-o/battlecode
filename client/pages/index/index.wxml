@@ -73,7 +73,7 @@
     <view wx:if="{{statusText}}" class="loading-hint">{{statusText}}</view>
 
     <!-- death overlay -->
-    <view wx:if="{{myUnit && !myUnit.alive}}" class="dead-overlay">
+    <view wx:if="{{myUnit && !myUnit.alive}}" class="dead-overlay {{respawnReady ? 'scan' : ''}}">
       <view wx:if="{{!respawnReady}}" class="dead-inner">
         <view class="dead-title">已阵亡</view>
         <view class="dead-sub">复活倒计时</view>
@@ -81,8 +81,9 @@
       </view>
       <view wx:if="{{respawnReady}}" class="dead-inner">
         <view class="dead-title">可复活</view>
-        <view class="dead-sub">请走到己方基地前拍下基地标签</view>
-        <button class="revive-btn" bindtap="respawnAtBase">已拍基地，立即复位</button>
+        <view class="dead-sub">将镜头对准己方基地标签（{{myUnit.faction === 'red' ? '红 id33' : '蓝 id34'}}），保持约 1 秒自动复活</view>
+        <view class="scan-progress"><view class="scan-fill" style="width:{{scanPct}}%"></view></view>
+        <view class="scan-label">{{scanPct >= 100 ? '复位中…' : (scanPct > 0 ? '识别中 ' + scanPct + '%' : '未识别到基地标签')}}</view>
       </view>
     </view>
 

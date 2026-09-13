@@ -227,7 +227,8 @@ export function respawn(room: Room, socketId: string, baseId: number): { ok: tru
   if (player.faction === null) return { ok: false, message: '未选择阵营' };
   const expectedBase = player.faction === 'red' ? BASE_RED_ID : BASE_BLUE_ID;
   if (baseId !== expectedBase) return { ok: false, message: '请在自己阵营的基地复位' };
-  // Even if the 30s hasn't elapsed we accept — but we should enforce it.
+  // Respawn cooldown (RESPAWN_MS) must have elapsed before the base-tag
+  // confirmation is accepted.
   if (player.respawnReadyAt !== null && now() < player.respawnReadyAt) {
     const remain = Math.ceil((player.respawnReadyAt - now()) / 1000);
     return { ok: false, message: '复活倒计时未结束（剩 ' + remain + ' s）' };
