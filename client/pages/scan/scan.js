@@ -34,6 +34,12 @@ Page({
     this._procFrames = 0;   // 收到 dets 回包的帧数
     this._lastRaw = 0;      // 最近一帧检出条数（未经确认过滤）
     this._detMs = 0;        // 最近一帧 wasm 检测耗时
+    this._diagLastTs = Date.now();
+    this._rawAtDiag = 0;    // 上次刷新诊断行时的计数快照（算每秒速率）
+    this._procAtDiag = 0;
+    this._thumb = null;     // worker 回传的输入缩略图 {w,h,data}
+    this._thumbCanvas = null;
+    this._thumbCtx = null;
     this._platform = '?';
     try {
       const dev = (wx.getDeviceInfo ? wx.getDeviceInfo() : null) || (wx.getSystemInfoSync ? wx.getSystemInfoSync() : null);
@@ -77,17 +83,24 @@ Page({
       this._procFrames++;
       this._lastRaw = res.raw || 0;
       this._detMs = res.ms || 0;
+      if (res.thumb) this._thumb = res.thumb;
       this._fpsCount++;
       const now = Date.now();
       if (now - this._fpsLastTs >= 500) {
         const fps = (this._fpsCount * 1000) / (now - this._fpsLastTs);
         this._fpsCount = 0;
         this._fpsLastTs = now;
+        const dt = Math.max(1, now - this._diagLastTs);
+        const rawRate = ((this._rawFrames - this._rawAtDiag) * 1000 / dt).toFixed(1);
+        const procRate = ((this._procFrames - this._procAtDiag) * 1000 / dt).toFixed(1);
+        this._diagLastTs = now;
+        this._rawAtDiag = this._rawFrames;
+        this._procAtDiag = this._procFrames;
         this.setData({
           fps: fps.toFixed(1),
           diag: '检测' + this._detMs + 'ms' +
-            ' · 原始' + this._rawFrames +
-            ' · 处理' + this._procFrames +
+            ' · 原始' + rawRate + '/s' +
+            ' · 处理' + procRate + '/s' +
             ' · 检出' + this._lastRaw +
             ' · canvas' + (this._canvasOk ? 'OK' : '失败') +
             (this._busyResets ? ' · busy复位' + this._busyResets : '') +
@@ -215,6 +228,40 @@ Page({
       ctx.font = 'bold 16px sans-serif';
       ctx.fillStyle = '#ffff88';
       ctx.fillText('id=' + d.id, d.c[0] * sx + 8, d.c[1] * sy - 8);
+    }
+
+    this._drawThumb(ctx, W);
+  },
+
+  // 右上角画 worker 回传的输入缩略图（真机诊断：看 wasm 实际收到的画面）
+  _drawThumb(ctx, W) {
+    const t = this._thumb;
+    if (!t || !t.data) return;
+    try {
+      const x = W - t.w - 10, y = 80;
+      if (!this._thumbCanvas || this._thumbCanvas._tw !== t.w || this._thumbCanvas._th !== t.h) {
+        this._thumbCanvas = wx.createOffscreenCanvas({ type: '2d', width: t.w, height: t.h });
+        this._thumbCanvas._tw = t.w;
+        this._thumbCanvas._th = t.h;
+        this._thumbCtx = this._thumbCanvas.getContext('2d');
+      }
+      const img = this._thumbCtx.createImageData(t.w, t.h);
+      img.data.set(new Uint8ClampedArray(t.data));
+      this._thumbCtx.putImageData(img, 0, 0);
+      ctx.drawImage(this._thumbCanvas, x, y, t.w, t.h);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, t.w, t.h);
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('检测输入', x + 2, y - 3);
+    } catch (e) {
+      // offscreen canvas 不可用时降级为原尺寸直贴（putImageData 不走缩放）
+      try {
+        const img = ctx.createImageData(t.w, t.h);
+        img.data.set(new Uint8ClampedArray(t.data));
+        ctx.putImageData(img, Math.max(0, W - t.w - 10), 80);
+      } catch (e2) {}
     }
   },
 

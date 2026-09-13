@@ -179,7 +179,7 @@ function runDetect(msg) {
     });
   }
 
-  post2main({
+  var out = {
     type: 'dets',
     frameId: msg.frameId,
     width: w,
@@ -187,7 +187,34 @@ function runDetect(msg) {
     ms: lastMs,
     raw: n,
     detections: dets
-  });
+  };
+  // 每隔一帧附一张输入缩略图：真机上直接看到 wasm 收到的画面——
+  // 花屏/条纹=帧格式错，横竖颠倒/镜像=朝向错，全黑=帧内容异常。
+  if (msg.frameId % 2 === 0) {
+    try { out.thumb = buildThumb(data, w, h); } catch (e) {}
+  }
+  post2main(out);
+}
+
+// 从原始 RGBA 帧抽 ~120px 宽的小图（nearest 采样），用于真机诊断
+function buildThumb(data, w, h) {
+  var tw = 120;
+  var th = Math.max(1, Math.round(h * tw / w));
+  var src = new Uint8Array(data);
+  var out = new Uint8Array(tw * th * 4);
+  for (var ty = 0; ty < th; ty++) {
+    var srow = Math.min(h - 1, Math.floor(ty * h / th)) * w * 4;
+    var drow = ty * tw * 4;
+    for (var tx = 0; tx < tw; tx++) {
+      var s = srow + Math.min(w - 1, Math.floor(tx * w / tw)) * 4;
+      var d = drow + tx * 4;
+      out[d] = src[s];
+      out[d + 1] = src[s + 1];
+      out[d + 2] = src[s + 2];
+      out[d + 3] = 255;
+    }
+  }
+  return { w: tw, h: th, data: out.buffer };
 }
 
 // 尽早上报 boot：主线程以此判断 worker 脚本已成功执行（区别于 wasm 初始化慢）。
