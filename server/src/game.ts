@@ -6,7 +6,7 @@
 import {
   Room,
   Unit, GameEvent, EventEnvelope, Faction, Role,
-  DAMAGE_PER_HIT, PLAYER_MAX_HP, RESPAWN_MS,
+  DAMAGE_PER_HIT, PLAYER_MAX_HP, RESPAWN_MS, FIRE_COOLDOWN_MS,
   PLAYER_ID_MIN, PLAYER_ID_MAX, BASE_RED_ID, BASE_BLUE_ID,
 } from './protocol.js';
 import { ensureStatsFor } from './rooms.js';
@@ -32,6 +32,7 @@ export function startGame(room: Room): void {
   // Transition immediately to playing; 'armed' is a momentary marker.
   room.phase = 'playing';
   room.startedAt = now();
+  room.lastAttackAt.clear();
   // Reset every unit's hp at game start (in case lobby tinkering changed it).
   for (const u of room.units.values()) {
     u.hp = u.maxHp;
@@ -129,6 +130,11 @@ export function resolveAttack(room: Room, attackerSocketId: string, targetIds: n
   if (!attacker || !attacker.alive || !attacker.canAttack) return outcome;
 
   const src = attacker.id;
+  // 开火冷却：同一单位距上次已受理的开火不足 FIRE_COOLDOWN_MS 直接丢弃（客户端
+  // 同步镜像同一常量做 UI 门控；此处为权威拦截，防 ws 直连绕过）。
+  const lastShot = room.lastAttackAt.get(src) ?? 0;
+  if (now() - lastShot < FIRE_COOLDOWN_MS) return outcome;
+  room.lastAttackAt.set(src, now());
   const attackerStats = room.stats.get(src);
   // Dedupe & ignore impossible ids.
   const seen = new Set<number>();

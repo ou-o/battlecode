@@ -96,6 +96,7 @@ function joinPlayer(name, faction, role, idx) {
 
 function attackLoop(wsAlice) {
   // attack bob (id=1) 11 times → bob will die (hp 100 → 0 after 10 hits).
+  // 服务端有 FIRE_COOLDOWN_MS=1s 开火冷却，间隔必须 ≥1.05s，否则整次开火被丢弃。
   let i = 0;
   const timer = setInterval(() => {
     i++;
@@ -115,9 +116,9 @@ function attackLoop(wsAlice) {
           host.send(JSON.stringify({ t: "host:close" }));
           setTimeout(finish, 1500);
         }
-      }, 30);
+      }, 1050);
     }
-  }, 30);
+  }, 1050);
 }
 
-setTimeout(() => { tag("TIMEOUT"); finish(1); }, 15000);
+setTimeout(() => { tag("TIMEOUT"); finish(1); }, 100000);

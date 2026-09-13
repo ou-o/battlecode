@@ -81,6 +81,7 @@ export function createRoom(hostName: string, codeHint?: string): { room: Room; o
     players: new Map(),
     log: [],
     stats: new Map(),
+    lastAttackAt: new Map(),
     startedAt: null,
     winner: null,
     lastActivity: Date.now(),

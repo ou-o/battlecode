@@ -59,6 +59,7 @@ export interface Room {
   players: Map<string, PlayerSummary>;
   log: EventEnvelope[];          // full event history (for console)
   stats: Map<number, PlayerStats>;
+  lastAttackAt: Map<number, number>;  // unit id -> epoch ms of last accepted shot (FIRE_COOLDOWN_MS)
   startedAt: number | null;
   winner: Faction | null;
   lastActivity: number;
@@ -154,6 +155,7 @@ export const PLAYER_MAX_HP = 100;
 export const BUNKER_MAX_HP = 2000;
 export const BASE_MAX_HP = 500;
 export const RESPAWN_MS = 15000;
+export const FIRE_COOLDOWN_MS = 1000;   // 同一单位两次开火的最小间隔
 
 export const PLAYER_ID_MIN = 0;
 export const PLAYER_ID_MAX = 22;

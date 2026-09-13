@@ -16,23 +16,20 @@
 .bar > text { position: absolute; left: 12rpx; top: 0; line-height: 24rpx; font-size: 18rpx; color: #fff; }
 .hpbar { height: 32rpx; }
 
+/* 友方侧栏（敌方无侧栏：敌方信息仅扫描时出现在画面名牌上） */
 .side { position: absolute; top: 200rpx; width: 280rpx; background: rgba(12,14,20,0.7); border-radius: 12rpx; padding: 12rpx; }
 .side.friends { left: 20rpx; border-left: 6rpx solid #4d9bff; }
-.side.enemies { right: 20rpx; border-right: 6rpx solid #ff6b6b; }
 .side-title { color: #9aa6bd; font-size: 22rpx; margin-bottom: 8rpx; }
 .side-row { display: flex; flex-direction: column; padding: 6rpx 0; }
 .sr-n { font-size: 20rpx; color: #dfe4ee; }
 .side-row .bar { margin-top: 4rpx; }
 
+/* 基地面板：常显己方基地 */
 .bases { position: absolute; bottom: 200rpx; left: 20rpx; right: 20rpx; display: flex; gap: 16rpx; }
 .base { flex: 1; background: rgba(12,14,20,0.7); padding: 12rpx; border-radius: 12rpx; font-size: 22rpx; }
 .base.red-base { border-left: 6rpx solid #ff6b6b; }
 .base.blue-base { border-left: 6rpx solid #4d9bff; }
 .base text { color: #dfe4ee; display: block; margin-bottom: 6rpx; }
-
-.bunkers { position: absolute; bottom: 130rpx; left: 20rpx; right: 20rpx; display: flex; gap: 8rpx; flex-wrap: wrap; }
-.base-mini text { background: #2a3142; padding: 2rpx 10rpx; border-radius: 4rpx; font-size: 20rpx; color: #e0b84d; }
-.base-mini .dstr { color: #ff6b6b; opacity: 0.6; text-decoration: line-through; }
 
 /* shutter button — camera-app style, circular white, bottom center */
 .shutter-wrap { position: absolute; bottom: 20rpx; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8rpx; }
@@ -45,10 +42,21 @@
 .shutter-btn.disabled .shutter-core { background: #cfd3da; }
 .shutter-label { font-size: 24rpx; color: #dfe4ee; text-shadow: 0 1rpx 4rpx rgba(0,0,0,0.8); }
 
-.banner { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); font-size: 80rpx; font-weight: 700; padding: 24rpx 60rpx; border-radius: 24rpx; pointer-events: none; }
-.banner.kill { background: rgba(0,0,0,0.55); color: #ffd56b; }
-.banner.down, .banner.bunker { background: rgba(0,0,0,0.55); color: #ff6b6b; }
+/* 受击反馈：全屏红色 vignette，450ms 淡出 */
+.hurt-vignette { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 120rpx 40rpx rgba(255,45,45,0.55); animation: hurtFade 450ms ease-out forwards; }
+@keyframes hurtFade { from { opacity: 1; } to { opacity: 0; } }
+
+/* 横幅：守望先锋风格入场（击杀金色 / 阵亡红 / 掩体金 / 复活绿） */
+.banner { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); font-size: 72rpx; font-weight: 700; padding: 20rpx 56rpx; border-radius: 16rpx; pointer-events: none; animation: bannerIn 260ms ease-out; }
+.banner.kill { background: linear-gradient(100deg, rgba(0,0,0,0.15), rgba(0,0,0,0.62) 22%, rgba(0,0,0,0.62) 78%, rgba(0,0,0,0.15)); color: #ffd56b; text-shadow: 0 0 24rpx rgba(255,213,107,0.45); }
+.banner.down { background: rgba(0,0,0,0.55); color: #ff6b6b; }
+.banner.bunker { background: rgba(0,0,0,0.55); color: #e0b84d; }
 .banner.revive { background: rgba(0,0,0,0.55); color: #6bd96b; }
+@keyframes bannerIn {
+  0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+  60% { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
 
 .loading-hint { position: absolute; left: 50%; top: 80rpx; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: #4d9bff; padding: 8rpx 24rpx; border-radius: 8rpx; font-size: 24rpx; }
 

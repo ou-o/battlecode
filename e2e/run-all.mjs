@@ -31,7 +31,7 @@ const fail = (m) => { process.stdout.write('FAIL(' + step + '): ' + m + '\n'); p
 const set = (s) => { step = s; process.stdout.write('>>> ' + s + '\n'); };
 let wd = null;
 function armWatchdog(ms) { if (wd) clearInterval(wd); wd = setInterval(() => { process.stdout.write('!!WD stuck@' + step + '\n'); process.exit(2); }, ms); wd.unref?.(); }
-armWatchdog(120000);
+armWatchdog(150000);
 
 // app-level helpers (work)
 const ev = (fn, ...a) => mp.evaluate(fn, ...a);
@@ -194,17 +194,20 @@ async function makePlayer({ code, name, faction, role, tagId }) {
   log('battle data ok');
 
   set('attack-bob');
-  await ev((id) => { const ps = getCurrentPages(); const p = ps[ps.length - 1]; p._trackers[String(id)] = { id, count: 99, misses: 0, visible: true, lastDet: { id, c: [100, 100], p: [[80, 80], [120, 80], [120, 120], [80, 120]] } }; }, TAG_BOB);
+  // 新攻击门控：attack() 只打 _aim 套住的目标，且客户端/服务端都有 1s 开火
+  // 冷却。直接注入 _aim 跨过准星/绘制依赖，并按 ≥1.05s 间隔开火。
+  const aimAttack = (tid) => ev((id) => { const ps = getCurrentPages(); const p = ps[ps.length - 1]; p._aim = { id, unit: p._unitsById[id] || null, attackable: true, dist: 0 }; p.attack(); }, tid);
   const bobHp = async () => { const dd = await pageData(); return dd.enemies.find((u) => u.id === TAG_BOB); };
   let bu = await bobHp(); assert(bu && bu.alive && bu.hp === 100, 'bob 100');
-  for (let i = 0; i < 12; i++) { await ev(() => { const ps = getCurrentPages(); ps[ps.length - 1].attack(); }); await sleep(60); }
+  for (let i = 0; i < 12; i++) { await aimAttack(TAG_BOB); await sleep(1100); }
   let bobDead = false;
   for (let i = 0; i < 40; i++) { bu = await bobHp(); if (bu && !bu.alive) { bobDead = true; break; } await sleep(120); }
   if (!bobDead) fail('bob not dead');
   d = await pageData(); log('bob dead; banner=' + d.bannerText);
 
   set('get-killed');
-  for (let i = 0; i < 12; i++) { carol.p.send('attack', { ids: [TAG_ME] }); await sleep(40); }
+  // 服务端 FIRE_COOLDOWN_MS=1s：carol 的 ws 直连攻击同样按 ≥1.05s 间隔。
+  for (let i = 0; i < 12; i++) { carol.p.send('attack', { ids: [TAG_ME] }); await sleep(1100); }
   let meDead = false;
   for (let i = 0; i < 60; i++) { d = await pageData(); if (d.myUnit && !d.myUnit.alive) { meDead = true; break; } await sleep(120); }
   if (!meDead) fail('player not killed');
@@ -235,16 +238,10 @@ async function makePlayer({ code, name, faction, role, tagId }) {
   for (let i = 0; i < 8; i++) { d = await pageData(); if (d.bannerText === '已复活') { revivedBanner = true; break; } await sleep(150); }
   assert(revivedBanner, 'revive banner'); log('auto-revived hp=' + d.myUnit.hp);
 
-  set('win'); armWatchdog(90000);
-  // Re-inject the base tracker each iteration: by this point in a run the
-  // camera/wasm pipeline is warm, so _updateTrackers([]) drops an injected
-  // tracker after _DROP frames (~150 ms). Re-injecting every tick keeps the
-  // target visible so each attack() actually emits a hit on the base.
+  set('win'); armWatchdog(130000);
+  // 500hp 基地需 50 次命中，开火冷却 1s → 51 发按 ≥1.05s 间隔约 56s。
   d = await pageData(); log('pre-win myUnit=' + JSON.stringify({alive:d.myUnit?.alive, canAttack:d.myUnit?.canAttack, hp:d.myUnit?.hp, fac:d.myUnit?.faction}) + ' blueBase=' + JSON.stringify({hp:d.blueBase?.hp, alive:d.blueBase?.alive}));
-  for (let i = 0; i < 60; i++) {
-    await ev((id) => { const ps = getCurrentPages(); const p = ps[ps.length - 1]; p._trackers[String(id)] = { id, count: 99, misses: 0, visible: true, lastDet: { id, c: [200, 200], p: [[180, 180], [220, 180], [220, 220], [180, 220]] } }; p.attack(); }, BASE_BLUE);
-    await sleep(30);
-  }
+  for (let i = 0; i < 51; i++) { await aimAttack(BASE_BLUE); await sleep(1100); }
   d = await pageData(); log('post-attack blueBase hp=' + d.blueBase?.hp + ' endedOverlay=' + d.endedOverlay);
   let ended = false;
   for (let i = 0; i < 60; i++) { d = await pageData(); if (d.endedOverlay) { ended = true; break; } await sleep(200); }
