@@ -10,6 +10,7 @@
         <text class="me-meta">{{tagCount}} 个标签</text>
         <text class="fps">FPS {{fps}}</text>
       </view>
+      <view class="diag-row" wx:if="{{diag}}"><text class="diag-text">{{diag}}</text></view>
     </view>
 
     <!-- live visible tag list -->

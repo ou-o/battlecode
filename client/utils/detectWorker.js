@@ -15,15 +15,30 @@ var worker = null;
 var ready = false;       // worker 内 wasm 是否已就绪
 var fatalError = null;   // 若有致命错误，保留并播报给后续订阅者
 var subs = [];           // 订阅者回调集合（各页面）
+var alive = false;       // 是否收到过 worker 的任何消息（boot/pong/ready/error）
+var aliveTimer = null;
+
+// 实时日志：真机远程可查（we 分析后台），不存在则降级 console
+var rtlog = null;
+try {
+  if (typeof wx !== 'undefined' && wx.getRealtimeLogManager) rtlog = wx.getRealtimeLogManager();
+} catch (e) {}
+
+function logErr(scope, e) {
+  var msg = scope + ': ' + (e && e.message ? e.message : e);
+  console.error('[detectWorker] ' + msg);
+  if (rtlog) { try { rtlog.error('[detectWorker] ' + msg); } catch (e2) {} }
+}
 
 function dispatch(res) {
   for (var i = 0; i < subs.length; i++) {
-    try { subs[i](res); } catch (e) {}
+    try { subs[i](res); } catch (e) { logErr('订阅回调', e); }
   }
 }
 
 function fail(msg) {
   if (!fatalError) fatalError = msg;
+  logErr('fatal', new Error(msg));
   dispatch({ type: 'error', message: msg });
   return null;
 }
@@ -41,10 +56,19 @@ function ensureWorker() {
   }
   worker = w;
   worker.onMessage(function (res) {
+    alive = true;
+    if (aliveTimer) { clearTimeout(aliveTimer); aliveTimer = null; }
     if (res && res.type === 'ready') ready = true;
     if (res && res.type === 'error' && !fatalError) fatalError = res.message;
     dispatch(res);
   });
+  // 判活：worker 脚本若加载即崩（一条消息都不回），超时可见报错，
+  // 而不是页面永远卡在「正在加载检测引擎…」。
+  try { w.postMessage({ type: 'ping' }); } catch (e) { logErr('postMessage(ping)', e); }
+  aliveTimer = setTimeout(function () {
+    aliveTimer = null;
+    if (!alive) fail('Worker 无响应（脚本未加载或运行时不兼容）');
+  }, 2500);
   return worker;
 }
 
@@ -67,7 +91,7 @@ function subscribe(fn) {
 // 向 worker 投递一帧或消息（惰性创建）。对所有消费者复用同一个实例。
 function post(msg) {
   var w = ensureWorker();
-  if (w) { try { w.postMessage(msg); } catch (e) {} }
+  if (w) { try { w.postMessage(msg); } catch (e) { logErr('postMessage', e); } }
 }
 
 module.exports = { subscribe: subscribe, post: post };

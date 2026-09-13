@@ -8,6 +8,8 @@
 .me-name { font-size: 28rpx; font-weight: 600; color: #dfe4ee; }
 .me-meta { color: #00ff88; font-weight: 600; }
 .fps { margin-left: auto; color: #6bd96b; }
+.diag-row { margin-top: 6rpx; }
+.diag-text { font-size: 20rpx; color: #8fa3c8; }
 
 .tagstrip { position: absolute; top: 130rpx; left: 20rpx; right: 20rpx; display: flex; flex-wrap: wrap; gap: 12rpx; }
 .tagstrip.hint { color: #9aa6bd; }

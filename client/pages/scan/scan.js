@@ -8,12 +8,15 @@ Page({
     wasmReady: false,
     statusText: '正在加载检测引擎…',
     fps: '0.0',
+    diag: '',         // 屏上诊断行：定位真机（如鸿蒙）识别链路断在哪一环
     visibleIds: [],   // 当前稳定确认可见的标签 ID 列表
     tagCount: 0,      // 简写：visibleIds.length
   },
 
   onLoad() {
     this._workerBusy = false;
+    this._busySince = 0;
+    this._busyResets = 0;
     this._frameId = 0;
     this._fpsCount = 0;
     this._fpsLastTs = Date.now();
@@ -22,10 +25,20 @@ Page({
     this._DROP = 5;
     this._canvas = null;
     this._ctx = null;
+    this._canvasOk = false;
     this._canvasW = 0;
     this._canvasH = 0;
     this._frameW = 0;
     this._frameH = 0;
+    this._rawFrames = 0;    // onCameraFrame 原始回调数（gate 之前）——区分「帧没来/没被处理」
+    this._procFrames = 0;   // 收到 dets 回包的帧数
+    this._lastRaw = 0;      // 最近一帧检出条数（未经确认过滤）
+    this._detMs = 0;        // 最近一帧 wasm 检测耗时
+    this._platform = '?';
+    try {
+      const dev = (wx.getDeviceInfo ? wx.getDeviceInfo() : null) || (wx.getSystemInfoSync ? wx.getSystemInfoSync() : null);
+      if (dev && dev.platform) this._platform = dev.platform;
+    } catch (e) {}
 
     this._initWorker();
     this._initCamera();
@@ -61,13 +74,25 @@ Page({
       this._updateTrackers(res.detections || []);
       this._frameW = res.width;
       this._frameH = res.height;
+      this._procFrames++;
+      this._lastRaw = res.raw || 0;
+      this._detMs = res.ms || 0;
       this._fpsCount++;
       const now = Date.now();
       if (now - this._fpsLastTs >= 500) {
         const fps = (this._fpsCount * 1000) / (now - this._fpsLastTs);
         this._fpsCount = 0;
         this._fpsLastTs = now;
-        this.setData({ fps: fps.toFixed(1) });
+        this.setData({
+          fps: fps.toFixed(1),
+          diag: '检测' + this._detMs + 'ms' +
+            ' · 原始' + this._rawFrames +
+            ' · 处理' + this._procFrames +
+            ' · 检出' + this._lastRaw +
+            ' · canvas' + (this._canvasOk ? 'OK' : '失败') +
+            (this._busyResets ? ' · busy复位' + this._busyResets : '') +
+            ' · ' + this._platform,
+        });
       }
       // 收集稳定可见的 ID
       const ids = [];
@@ -90,18 +115,34 @@ Page({
       return;
     }
     this._listener = ctx.onCameraFrame((frame) => {
+      this._rawFrames++;
+      // busy 看门狗：worker 若因异常没回包，3s 后强制复位，识别不至于永久停摆
+      if (this._workerBusy && Date.now() - this._busySince > 3000) {
+        this._workerBusy = false;
+        this._busyResets++;
+      }
       if (!this.data.running || !this.data.wasmReady || this._workerBusy) return;
       this._workerBusy = true;
+      this._busySince = Date.now();
       this._frameId++;
       detect.post({ type: 'frame', frameId: this._frameId, width: frame.width, height: frame.height, data: frame.data });
     });
     this._listener.start();
   },
 
-  _initCanvas() {
+  _initCanvas(attempt) {
     const q = this.createSelectorQuery();
     q.select('#overlay').fields({ node: true, size: true }).exec((res) => {
-      if (!res || !res[0] || !res[0].node) return;
+      if (!res || !res[0] || !res[0].node) {
+        // ArkWeb 等环境下 canvas 节点就绪可能偏慢：先重试一次，仍失败则
+        // 明确显示（原来这里静默 return，表现为「FPS 正常但永远不画框」）。
+        if (!attempt) {
+          setTimeout(() => this._initCanvas(1), 800);
+        } else {
+          this.setData({ statusText: 'overlay canvas 初始化失败（无法画框）' });
+        }
+        return;
+      }
       const c = res[0].node;
       const dpr = (wx.getWindowInfo ? wx.getWindowInfo().pixelRatio : 2) || 2;
       c.width = res[0].width * dpr;
@@ -111,6 +152,7 @@ Page({
       this._ctx.scale(dpr, dpr);
       this._canvasW = res[0].width;
       this._canvasH = res[0].height;
+      this._canvasOk = true;
     });
   },
 
@@ -125,7 +167,9 @@ Page({
         t.count++; t.misses = 0; t.lastDet = byId[t.id];
         if (t.count >= CONFIRM && !t.visible) t.visible = true;
       } else {
-        t.count = 0; t.misses++;
+        // miss 时按 1 衰减而非清零：低帧率/闪烁检测仍能凑够 3 次净命中；
+        // visible 门槛与隐藏逻辑不变，不复活虚线残框。
+        t.count = Math.max(0, t.count - 1); t.misses++;
         if (t.misses >= DROP) t.visible = false;   // 灰色虚线宽限期
       }
     }
