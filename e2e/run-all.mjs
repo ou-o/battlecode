@@ -188,6 +188,9 @@ async function makePlayer({ code, name, faction, role, tagId }) {
   assert(d.enemies.some((u) => u.id === TAG_CAROL), 'carol enemy');
   assert(d.redBase && d.blueBase && d.redBase.id === BASE_RED && d.blueBase.id === BASE_BLUE, 'bases');
   assert(d.bunkers.length === BUNKERS.length, 'bunkers');
+  // 底栈 lobby 页在对局中仍保持 joined（返回房间页后「回到对局」卡片的数据前提）
+  const lob = await ev(() => { const ps = getCurrentPages(); const b = ps[0]; return b && b.route === 'pages/lobby/lobby' ? { joined: b.data.joined, phase: b.data.phase } : null; });
+  assert(lob && lob.joined === true && lob.phase === 'playing', 'lobby stays joined in-game');
   log('battle data ok');
 
   set('attack-bob');

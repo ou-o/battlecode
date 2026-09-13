@@ -47,35 +47,46 @@
       </view>
     </view>
 
-    <view class="bc-card">
-      <view class="sec-title">1. 选择阵营</view>
-      <view class="pill-row">
-        <text class="pill red {{faction === 'red' ? 'active' : ''}}" data-fac="red" bindtap="onFactionTap">红方</text>
-        <text class="pill blue {{faction === 'blue' ? 'active' : ''}}" data-fac="blue" bindtap="onFactionTap">蓝方</text>
-      </view>
+    <!-- 对局进行中：隐藏赛前选择，提供回到对局入口 -->
+    <view class="bc-card" wx:if="{{phase === 'playing'}}">
+      <view class="sec-title">对局进行中</view>
+      <view class="bc-muted" wx:if="{{me.tagId != null}}">你的身份仍保留：ID {{me.tagId}} · {{me.faction === 'red' ? '红方' : '蓝方'}}</view>
+      <view class="bc-muted" wx:else>你尚未绑定标签，正在观战</view>
+      <view class="bc-muted in-game-tip">返回战斗页不会退出房间，血量与战绩仍会保留；点「退出房间」将放弃本局身份。</view>
+      <button class="bc-btn success" bindtap="gotoBattle">回到对局</button>
     </view>
 
-    <view class="bc-card">
-      <view class="sec-title">2. 选择角色</view>
-      <view class="pill-row">
-        <text class="pill {{role === 'assault' ? 'active' : ''}}" data-role="assault" bindtap="onRoleTap">突击兵</text>
-        <text class="pill {{role === 'engineer' ? 'active' : ''}}" data-role="engineer" bindtap="onRoleTap">工程师</text>
-        <text class="pill {{role === 'sniper' ? 'active' : ''}}" data-role="sniper" bindtap="onRoleTap">狙击手</text>
+    <block wx:if="{{phase !== 'playing'}}">
+      <view class="bc-card">
+        <view class="sec-title">1. 选择阵营</view>
+        <view class="pill-row">
+          <text class="pill red {{faction === 'red' ? 'active' : ''}}" data-fac="red" bindtap="onFactionTap">红方</text>
+          <text class="pill blue {{faction === 'blue' ? 'active' : ''}}" data-fac="blue" bindtap="onFactionTap">蓝方</text>
+        </view>
       </view>
-    </view>
 
-    <view class="bc-card">
-      <view class="sec-title">3. 绑定你的 AprilTag</view>
-      <view class="bc-muted">填写你拿到的那张 25h9 标签的 ID（0–22）。</view>
-      <view class="bind-row">
-        <input class="bc-input" type="number" bindinput="bindInput" value="{{bindInput}}" placeholder="标签 ID (0-22)" maxlength="2" />
-        <button class="bc-btn success inline" bindtap="submitBind" disabled="{{bindInput === ''}}">{{me.tagId != null ? '重新绑定' : '绑定'}}</button>
+      <view class="bc-card">
+        <view class="sec-title">2. 选择角色</view>
+        <view class="pill-row">
+          <text class="pill {{role === 'assault' ? 'active' : ''}}" data-role="assault" bindtap="onRoleTap">突击兵</text>
+          <text class="pill {{role === 'engineer' ? 'active' : ''}}" data-role="engineer" bindtap="onRoleTap">工程师</text>
+          <text class="pill {{role === 'sniper' ? 'active' : ''}}" data-role="sniper" bindtap="onRoleTap">狙击手</text>
+        </view>
       </view>
-      <view wx:if="{{me.tagId != null}}" class="already-bound">已绑定 ID {{me.tagId}} ✓</view>
-    </view>
+
+      <view class="bc-card">
+        <view class="sec-title">3. 绑定你的 AprilTag</view>
+        <view class="bc-muted">填写你拿到的那张 25h9 标签的 ID（0–22）。</view>
+        <view class="bind-row">
+          <input class="bc-input" type="number" bindinput="bindInput" value="{{bindInput}}" placeholder="标签 ID (0-22)" maxlength="2" />
+          <button class="bc-btn success inline" bindtap="submitBind" disabled="{{bindInput === ''}}">{{me.tagId != null ? '重新绑定' : '绑定'}}</button>
+        </view>
+        <view wx:if="{{me.tagId != null}}" class="already-bound">已绑定 ID {{me.tagId}} ✓</view>
+      </view>
+    </block>
 
     <view class="bc-err" wx:if="{{err}}">{{err}}</view>
-    <view class="bc-muted center" wx:if="{{me.tagId != null}}">等待房主录入掩体并开始游戏…</view>
+    <view class="bc-muted center" wx:if="{{me.tagId != null && phase !== 'playing'}}">等待房主录入掩体并开始游戏…</view>
     <button class="bc-btn danger" bindtap="leaveRoom">退出房间</button>
   </view>
 

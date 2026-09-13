@@ -54,6 +54,7 @@ Page({
     this._myLastHp = null;   // for detecting respawn/round-start shocks
     this._scanSince = null;  // 基地标签开始连续可见的时刻
     this._scanFired = false; // 本轮瞄准是否已上报复活（防重复发送）
+    this._backGuard = false; // 对局中的返回确认守卫是否已开启
 
     this._initWorker();
     this._initCamera();
@@ -78,6 +79,7 @@ Page({
   },
 
   onUnload() {
+    this._setBackGuard(false);
     this._teardown();
     (this._unsubs || []).forEach((u) => u && u());
     if (this._respawnTicker) clearInterval(this._respawnTicker);
@@ -332,6 +334,19 @@ Page({
     if (this.data.scanPct) this.setData({ scanPct: 0 });
   },
 
+  // ---- 返回守卫：对局中返回需确认（低版本基础库无此 API 时静默降级） -----
+  _setBackGuard(on) {
+    if (on === this._backGuard) return;
+    this._backGuard = on;
+    try {
+      if (on) {
+        wx.enableAlertBeforeUnload && wx.enableAlertBeforeUnload({ message: '对局进行中，确定返回吗？返回后可从房间页重新进入战斗。' });
+      } else {
+        wx.disableAlertBeforeUnload && wx.disableAlertBeforeUnload();
+      }
+    } catch (e) { /* 不支持则忽略 */ }
+  },
+
   // ---- WS state updates -----
   _onState(snapshot, app) {
     app.globalData.room = snapshot;
@@ -361,6 +376,9 @@ Page({
     if (snapshot.phase === 'ended' && !this.data.endedOverlay) {
       this.setData({ endedOverlay: true, winnerText: snapshot.winner ? (snapshot.winner + ' 胜利') : '已结束' });
     }
+
+    // 对局进行中开启返回确认，结束后关闭（返回不退出房间，只离开战斗画面）
+    this._setBackGuard(snapshot.phase === 'playing');
 
     // Maintenance: respawn countdown ui
     if (myUnit && !myUnit.alive && myUnit.respawnReadyAt) {

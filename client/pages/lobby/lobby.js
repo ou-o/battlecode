@@ -95,6 +95,9 @@ Page({
 
   gotoScan() { wx.navigateTo({ url: '/pages/scan/scan' }); },
 
+  // 从房间页回到进行中的战斗（返回导航是上升沿触发，只能经此入口再进）
+  gotoBattle() { wx.navigateTo({ url: '/pages/index/index' }); },
+
   joinRoom() {
     const { code, name } = this.data;
     if (!/^\d{3}$/.test(code)) { this.setData({ err: '房间号必须是三位数字' }); return; }
@@ -104,8 +107,15 @@ Page({
   },
 
   leaveRoom() {
+    // 对局中退出会永久删除本局身份（服务端删 token/unit，且 playing 阶段禁止
+    // 重新绑定），文案必须比平时更强。
+    const playing = this.data.phase === 'playing';
     wx.showModal({
-      title: '退出房间', content: '确定退出当前房间？', success: (r) => {
+      title: '退出房间',
+      content: playing
+        ? '对局尚未结束：退出后本局身份（阵营/角色/标签）将被删除，无法再回到本局。确定退出？'
+        : '确定退出当前房间？',
+      success: (r) => {
         if (!r.confirm) return;
         ws.send('room:leave');
       },

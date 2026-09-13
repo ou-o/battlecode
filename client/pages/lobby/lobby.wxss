@@ -16,6 +16,7 @@
 .tag { background: #2a3142; padding: 4rpx 12rpx; border-radius: 6rpx; font-size: 22rpx; }
 
 .pill-row { display: flex; flex-wrap: wrap; }
+.in-game-tip { margin: 12rpx 0 4rpx; }
 .already-bound { color: #6bd96b; font-size: 24rpx; margin-top: 12rpx; text-align: center; }
 .bind-row { display: flex; align-items: center; gap: 12rpx; }
 .bind-row .bc-input { flex: 1; }
