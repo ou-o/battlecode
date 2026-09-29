@@ -22,10 +22,10 @@ const WEB_DIR = path.resolve(__dirname, '..', 'web');
 const HOST = process.env.HOST ?? '0.0.0.0';
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
 const CONSOLE_PASSWORD = process.env.BC_CONSOLE_PW ?? 'ismism';
-// 大厅入口口令开关（临时开放用）：BC_CONSOLE_OPEN=1 时取消大厅入口口令，
-// 任何人可直接进入大厅（房间总览 + 建房，经 /console）。房间入口不受影响，
-// 仍由房主 6 位验证码（hostToken）保护。恢复：删除 / 改为 0 后重启服务即可。
-const CONSOLE_OPEN = process.env.BC_CONSOLE_OPEN === '1';
+// 大厅口令默认关闭：控制台（大厅总览/建房/房间页）免口令直接使用，房间本身
+// 仍由房主 6 位验证码（hostToken）保护。需要恢复口令时设 BC_CONSOLE_OPEN=0
+// 并重启（口令值用 BC_CONSOLE_PW 覆盖，默认 ismism）。
+const CONSOLE_OPEN = process.env.BC_CONSOLE_OPEN !== '0';
 
 const app = express();
 app.use(express.json());
