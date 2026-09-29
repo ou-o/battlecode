@@ -150,8 +150,29 @@ export interface RoomSummary {
 
 // ---- Constants ----------------------------------------------------------
 
-export const DAMAGE_PER_HIT = 10;
-export const PLAYER_MAX_HP = 100;
+// 按角色战斗数值：对玩家（kind === 'player'）/ 对建筑（掩体 + 基地）每次命中
+// 伤害与角色血量。客户端镜像：client/pages/lobby/lobby.js 顶部 ROLE_COMBAT
+//（数值改动双端同步）。
+export interface RoleCombat {
+  playerDmg: number;
+  structDmg: number;
+  maxHp: number;
+}
+
+export const ROLE_COMBAT: Record<Role, RoleCombat> = {
+  assault: { playerDmg: 25, structDmg: 10, maxHp: 100 },   // 突击兵：均衡
+  engineer: { playerDmg: 20, structDmg: 20, maxHp: 100 },  // 工程师：对建筑伤害提高
+  sniper: { playerDmg: 60, structDmg: 10, maxHp: 60 },     // 狙击手：对人伤害提高，但脆皮
+};
+
+// 未选角色就绑定标签的玩家按突击兵结算（大厅 UI 隐藏在 playing 阶段之外，
+// 此处仅兜底）。
+export const DEFAULT_ROLE: Role = 'assault';
+
+export function roleCombat(role: Role | null): RoleCombat {
+  return ROLE_COMBAT[role ?? DEFAULT_ROLE];
+}
+
 export const BUNKER_MAX_HP = 2000;
 export const BASE_MAX_HP = 500;
 export const RESPAWN_MS = 15000;

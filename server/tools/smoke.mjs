@@ -75,7 +75,8 @@ function joinPlayer(name, faction, role, idx) {
         host.send(JSON.stringify({ t: "host:start" }));
         tag("host started game");
       }
-      // Alice attacks bob (id 1) repeatedly → expect bob death at 10 hits.
+      // Alice attacks bob (id 1) repeatedly → expect bob death at 3 hits.
+      // （alice 突击兵对人 25，bob 狙击手血量 60 → 3 发致死）
       if (snap.phase === "playing" && idx === 0 && !attackIssued) {
         attackIssued = true;
         attackLoop(alice);
@@ -95,7 +96,7 @@ function joinPlayer(name, faction, role, idx) {
 }
 
 function attackLoop(wsAlice) {
-  // attack bob (id=1) 11 times → bob will die (hp 100 → 0 after 10 hits).
+  // attack bob (id=1) 12 times → bob dies early (sniper hp 60, assault 对人 25 → 3 hits).
   // 服务端有 FIRE_COOLDOWN_MS=1s 开火冷却，间隔必须 ≥1.05s，否则整次开火被丢弃。
   let i = 0;
   const timer = setInterval(() => {

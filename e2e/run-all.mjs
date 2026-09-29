@@ -198,7 +198,8 @@ async function makePlayer({ code, name, faction, role, tagId }) {
   // 冷却。直接注入 _aim 跨过准星/绘制依赖，并按 ≥1.05s 间隔开火。
   const aimAttack = (tid) => ev((id) => { const ps = getCurrentPages(); const p = ps[ps.length - 1]; p._aim = { id, unit: p._unitsById[id] || null, attackable: true, dist: 0 }; p.attack(); }, tid);
   const bobHp = async () => { const dd = await pageData(); return dd.enemies.find((u) => u.id === TAG_BOB); };
-  let bu = await bobHp(); assert(bu && bu.alive && bu.hp === 100, 'bob 100');
+  let bu = await bobHp(); assert(bu && bu.alive && bu.hp === 60, 'bob 60 (sniper hp)');
+  // 我方突击兵对人 25 × 12 发：第 3 发击杀 bob（狙击手 60 血，25×3=75）。
   for (let i = 0; i < 12; i++) { await aimAttack(TAG_BOB); await sleep(1100); }
   let bobDead = false;
   for (let i = 0; i < 40; i++) { bu = await bobHp(); if (bu && !bu.alive) { bobDead = true; break; } await sleep(120); }
@@ -207,6 +208,7 @@ async function makePlayer({ code, name, faction, role, tagId }) {
 
   set('get-killed');
   // 服务端 FIRE_COOLDOWN_MS=1s：carol 的 ws 直连攻击同样按 ≥1.05s 间隔。
+  // carol 工程师对人 20 × 12 发：第 5 发击杀我（突击兵 100 血）。
   for (let i = 0; i < 12; i++) { carol.p.send('attack', { ids: [TAG_ME] }); await sleep(1100); }
   let meDead = false;
   for (let i = 0; i < 60; i++) { d = await pageData(); if (d.myUnit && !d.myUnit.alive) { meDead = true; break; } await sleep(120); }
@@ -239,7 +241,7 @@ async function makePlayer({ code, name, faction, role, tagId }) {
   assert(revivedBanner, 'revive banner'); log('auto-revived hp=' + d.myUnit.hp);
 
   set('win'); armWatchdog(130000);
-  // 500hp 基地需 50 次命中，开火冷却 1s → 51 发按 ≥1.05s 间隔约 56s。
+  // 我为突击兵：对建筑 10 → 500hp 基地需 50 次命中，开火冷却 1s → 51 发按 ≥1.05s 间隔约 56s。
   d = await pageData(); log('pre-win myUnit=' + JSON.stringify({alive:d.myUnit?.alive, canAttack:d.myUnit?.canAttack, hp:d.myUnit?.hp, fac:d.myUnit?.faction}) + ' blueBase=' + JSON.stringify({hp:d.blueBase?.hp, alive:d.blueBase?.alive}));
   for (let i = 0; i < 51; i++) { await aimAttack(BASE_BLUE); await sleep(1100); }
   d = await pageData(); log('post-attack blueBase hp=' + d.blueBase?.hp + ' endedOverlay=' + d.endedOverlay);

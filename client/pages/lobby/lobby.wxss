@@ -16,6 +16,11 @@
 .tag { background: #2a3142; padding: 4rpx 12rpx; border-radius: 6rpx; font-size: 22rpx; }
 
 .pill-row { display: flex; flex-wrap: wrap; }
+.role-desc-list { display: flex; flex-direction: column; gap: 8rpx; margin-top: 16rpx; font-size: 24rpx; color: #9aa6bd; }
+.role-desc { display: flex; align-items: baseline; justify-content: space-between; gap: 12rpx; }
+.role-desc.sel { color: #00ff88; }
+.role-stats { font-size: 22rpx; color: #6b7386; white-space: nowrap; }
+.role-desc.sel .role-stats { color: rgba(0, 255, 136, 0.65); }
 .in-game-tip { margin: 12rpx 0 4rpx; }
 .already-bound { color: #6bd96b; font-size: 24rpx; margin-top: 12rpx; text-align: center; }
 .bind-row { display: flex; align-items: center; gap: 12rpx; }

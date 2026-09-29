@@ -6,7 +6,7 @@
 import {
   Room,
   Unit, GameEvent, EventEnvelope, Faction, Role,
-  DAMAGE_PER_HIT, PLAYER_MAX_HP, RESPAWN_MS, FIRE_COOLDOWN_MS,
+  RoleCombat, roleCombat, RESPAWN_MS, FIRE_COOLDOWN_MS,
   PLAYER_ID_MIN, PLAYER_ID_MAX, BASE_RED_ID, BASE_BLUE_ID,
 } from './protocol.js';
 import { ensureStatsFor } from './rooms.js';
@@ -74,12 +74,14 @@ export function bindTag(room: Room, unitId: number, socketId: string): { ok: tru
   }
   const me = room.players.get(socketId);
   if (!me) return { ok: false, message: '未加入房间' };
+  // 角色决定血量；开局 startGame 会重置 hp = maxHp，这里建号即写对。
+  const maxHp = roleCombat(me.role).maxHp;
   // Create or update the player unit.
   let unit = room.units.get(unitId);
   if (!unit) {
     unit = {
       id: unitId, kind: 'player', faction: me.faction ?? null,
-      hp: PLAYER_MAX_HP, maxHp: PLAYER_MAX_HP,
+      hp: maxHp, maxHp,
       alive: true, destroyed: false,
       role: me.role, name: me.name, socketId,
       canAttack: false, respawnReadyAt: null,
@@ -90,6 +92,8 @@ export function bindTag(room: Room, unitId: number, socketId: string): { ok: tru
     unit.name = me.name;
     unit.role = me.role;
     unit.faction = me.faction ?? unit.faction;
+    unit.maxHp = maxHp;
+    unit.hp = maxHp;
   }
   me.tagId = unitId;
   ensureStatsFor(room, unit);
@@ -113,9 +117,17 @@ export function setFaction(room: Room, socketId: string, faction: Faction): { ok
 export function setRole(room: Room, socketId: string, role: Role): { ok: true } | { ok: false; message: string } {
   const me = room.players.get(socketId);
   if (!me) return { ok: false, message: '未加入房间' };
+  // 对局中锁定角色：角色现在决定伤害/血量，中途切换等于换枪换甲（ws 直连
+  // 绕过 UI 的兜底，与 FIRE_COOLDOWN_MS 同理）。
+  if (room.phase === 'playing') return { ok: false, message: '对局进行中不可更换角色' };
   me.role = role;
+  const combat: RoleCombat = roleCombat(role);
   for (const u of room.units.values()) {
-    if (u.kind === 'player' && u.socketId === socketId) { u.role = role; }
+    if (u.kind === 'player' && u.socketId === socketId) {
+      u.role = role;
+      u.maxHp = combat.maxHp;
+      u.hp = combat.maxHp;   // 仅赛前可到这（playing 已被拒），重置无害
+    }
   }
   return { ok: true };
 }
@@ -136,6 +148,8 @@ export function resolveAttack(room: Room, attackerSocketId: string, targetIds: n
   if (now() - lastShot < FIRE_COOLDOWN_MS) return outcome;
   room.lastAttackAt.set(src, now());
   const attackerStats = room.stats.get(src);
+  // 伤害按攻击者角色与目标类型结算：玩家吃 playerDmg，掩体/基地吃 structDmg。
+  const combat = roleCombat(attacker.role);
   // Dedupe & ignore impossible ids.
   const seen = new Set<number>();
   for (const id of targetIds) {
@@ -150,15 +164,16 @@ export function resolveAttack(room: Room, attackerSocketId: string, targetIds: n
     seen.add(id);
     outcome.stateChanged = true;
 
-    applyDamage(room, unit, DAMAGE_PER_HIT, src, outcome);
+    const dmg = unit.kind === 'player' ? combat.playerDmg : combat.structDmg;
+    applyDamage(room, unit, dmg, src, outcome);
     if (attackerStats && unit.kind !== 'base') {
-      attackerStats.dealt += DAMAGE_PER_HIT;
+      attackerStats.dealt += dmg;
     }
     if (unit.kind === 'player' && room.stats.has(unit.id)) {
-      room.stats.get(unit.id)!.taken += DAMAGE_PER_HIT;
+      room.stats.get(unit.id)!.taken += dmg;
     }
     // hit event for shooter feedback (even on base)
-    pushHit(outcome, room, src, unit.id, DAMAGE_PER_HIT);
+    pushHit(outcome, room, src, unit.id, dmg);
     if (unit.kind === 'base') {
       pushBaseHit(outcome, room, unit, src);
     }

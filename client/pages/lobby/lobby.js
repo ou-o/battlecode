@@ -3,6 +3,20 @@ const ws = require('../../utils/ws.js');
 
 const ROLE_CN = { assault: '突击兵', engineer: '工程师', sniper: '狙击手' };
 
+// 角色战斗数值 + 简要描述（镜像 server/src/protocol.ts ROLE_COMBAT，数值改动双端同步）。
+const ROLE_COMBAT = {
+  assault: { playerDmg: 25, structDmg: 10, maxHp: 100 },   // 均衡
+  engineer: { playerDmg: 20, structDmg: 20, maxHp: 100 },  // 对建筑伤害提高
+  sniper: { playerDmg: 60, structDmg: 10, maxHp: 60 },     // 对人伤害提高，但脆皮
+};
+const ROLE_DESC = { assault: '均衡', engineer: '对建筑伤害提高', sniper: '对人伤害提高，但脆皮' };
+const ROLES = Object.keys(ROLE_COMBAT).map((key) => ({
+  key,
+  cn: ROLE_CN[key],
+  desc: ROLE_DESC[key],
+  stats: '对人 ' + ROLE_COMBAT[key].playerDmg + ' · 对建筑 ' + ROLE_COMBAT[key].structDmg + ' · 血量 ' + ROLE_COMBAT[key].maxHp,
+}));
+
 Page({
   data: {
     serverUrl: '',
@@ -19,6 +33,7 @@ Page({
     // 绑定的 ID 输入框（0-22）
     bindInput: '',
     ROLE_CN,
+    ROLES,
   },
 
   onLoad() {

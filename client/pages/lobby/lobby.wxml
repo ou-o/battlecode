@@ -72,6 +72,12 @@
           <text class="pill {{role === 'engineer' ? 'active' : ''}}" data-role="engineer" bindtap="onRoleTap">工程师</text>
           <text class="pill {{role === 'sniper' ? 'active' : ''}}" data-role="sniper" bindtap="onRoleTap">狙击手</text>
         </view>
+        <view class="role-desc-list">
+          <view wx:for="{{ROLES}}" wx:key="key" class="role-desc {{role === item.key ? 'sel' : ''}}">
+            <text>{{item.cn}}：{{item.desc}}</text>
+            <text class="role-stats">{{item.stats}}</text>
+          </view>
+        </view>
       </view>
 
       <view class="bc-card">
