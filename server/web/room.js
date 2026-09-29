@@ -1,7 +1,10 @@
 // web/room.js — 房间页（房主控制台）。
 // 从 /room/:code 读取房间号；从 URL ?token= 或 localStorage 读取房主 6 位验证码。
-// 口令已在大厅输入并保存在 localStorage('bc_console_pw')，无需在此重复输入。
-// 无验证码时跳转 /gate/:code 校验页输入；带码则经 /console (pw+code+token) 连接展示。
+// 口令以 localStorage('bc_console_pw') 为准（在大厅输入过即存）。本机没有口令时
+// 不再直接跳大厅（那样会丢掉 URL 里的 token）：先带现有凭据尝试连接，由服务端
+// 裁决——BC_CONSOLE_OPEN=1 免口令模式直接进入；口令不通过则把本页地址存入
+// sessionStorage('bc_return_to') 后回大厅，大厅验证通过自动跳回。
+// 无 token 时跳 /gate/:code 校验页输入。
 // 顶部展示重进验证码，提供「复制验证码」按钮，供房主保存以便重进。
 
 const $ = (id) => document.getElementById(id);
@@ -22,9 +25,11 @@ const urlToken = params.get('token') || '';
 
 const PW_KEY = 'bc_console_pw';
 const TOKEN_KEY = (c) => `bc_room_${c}_token`;
+const RETURN_KEY = 'bc_return_to';
 
 let ws = null;
 let closed = false;          // true：收到 room:closed 后停止重连
+let leaving = false;         // true：已决定跳转他页（口令回大厅等），停止重连
 let pw = '';
 let token = '';
 
@@ -37,12 +42,11 @@ function main() {
     return;
   }
 
-  // 口令来自大厅（本地已保存）；此处不重复输入。
+  // 口令来自大厅（本地已保存）；此处不重复输入。没有口令也先尝试连接：
+  // 免口令模式（BC_CONSOLE_OPEN=1）可直接进入；口令不通过则经 room:error
+  // 分支记住本页地址后回大厅，避免在这里丢掉 URL 里的 token。
   pw = localStorage.getItem(PW_KEY) || '';
   token = urlToken || localStorage.getItem(TOKEN_KEY(code)) || '';
-
-  // 从未在大厅输入过口令 → 回大厅完成口令验证。
-  if (!pw) { location.href = '/hall.html'; return; }
 
   // 无验证码 → 跳校验页让房主输入 6 位验证码。
   if (!token) { location.href = `/gate/${encodeURIComponent(code)}`; return; }
@@ -53,6 +57,14 @@ function main() {
   $('btnCopyRaw').onclick = () => copyToken();
 
   connect(pw, token);
+}
+
+// 口令不通过 → 回大厅完成验证：先记住当前房间地址（含 token），大厅连接
+// 成功后由 console.js 取回并自动跳回。
+function goBackToHall() {
+  leaving = true;
+  try { sessionStorage.setItem(RETURN_KEY, location.href); } catch {}
+  location.href = '/hall.html';
 }
 
 function updateCredentialUI() {
@@ -94,7 +106,7 @@ function connect(p, t) {
     onServer(m);
   };
   ws.onclose = () => {
-    if (closed) return;
+    if (closed || leaving) return;
     $('errText').textContent = '连接断开，2 秒后重连…';
     setTimeout(() => connect(p, t), 2000);
   };
@@ -120,7 +132,7 @@ function onServer(m) {
     case 'room:error':
       if (/口令/.test(m.message)) {
         localStorage.removeItem(PW_KEY);
-        location.href = '/hall.html';
+        goBackToHall();
       } else if (/token|不存在|不匹配/.test(m.message)) {
         localStorage.removeItem(TOKEN_KEY(code));
         location.href = `/gate/${encodeURIComponent(code)}`;

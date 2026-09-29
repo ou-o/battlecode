@@ -11,6 +11,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
 })[c]);
 
 const PW_KEY = 'bc_console_pw';
+const RETURN_KEY = 'bc_return_to';
 const PHASE_CN = { lobby: '大厅', binding: '绑定中', armed: '就绪', playing: '对战中', ended: '已结束' };
 const FAC_CN = { red: '红', blue: '蓝' };
 
@@ -69,7 +70,15 @@ function connectOverview() {
   };
   ws.onmessage = (ev) => {
     let m; try { m = JSON.parse(ev.data); } catch { return; }
-    if (m.t === 'room:list') renderOverview(m.rooms);
+    if (m.t === 'room:list') {
+      // room:list 只发给通过口令的控制台，以此确认授权。若是从房间页被口令
+      // 弹回来的（bc_return_to 有值），此时跳回原房间地址（含 token）。不能
+      // 放在 ws.onopen 做——服务端先接受连接再校验口令，onopen 时口令尚未
+      // 通过，未授权连接也会被弹回房间，形成 room↔hall 往返死循环。
+      const back = consumeReturnTo();
+      if (back) { closed = true; try { ws.close(); } catch {}; location.href = back; return; }
+      renderOverview(m.rooms);
+    }
     else if (m.t === 'room:created') onCreated(m);
     else if (m.t === 'room:error') {
       if (/口令/.test(m.message)) {
@@ -97,8 +106,28 @@ function connectOverview() {
 function send(t, p = {}) { if (ws && ws.readyState === 1) ws.send(ENVELOPE(t, p)); }
 
 function onCreated(m) {
+  // 用户转而新建房间：清掉可能残留的回跳地址，避免之后的重连被误跳。
+  try { sessionStorage.removeItem(RETURN_KEY); } catch {}
   // 建房成功后自动跳转到该房间页（location.href 同页导航在所有设备可靠，不依赖弹窗）。
   location.href = `/room/${encodeURIComponent(m.code)}?token=${encodeURIComponent(m.hostToken)}`;
+}
+
+// 房间页口令不通过时会先把完整地址（含 token）存入 sessionStorage；大厅连接
+// 成功（口令通过）后取回并跳回。仅接受同源 /room/:code 路径，取后即清。
+function consumeReturnTo() {
+  let raw = '';
+  try {
+    raw = sessionStorage.getItem(RETURN_KEY) || '';
+    sessionStorage.removeItem(RETURN_KEY);
+  } catch {}
+  if (!raw) return '';
+  try {
+    const u = new URL(raw, location.origin);
+    if (u.origin === location.origin && /^\/room\/\d{3}$/.test(u.pathname)) {
+      return u.pathname + u.search;
+    }
+  } catch {}
+  return '';
 }
 
 function renderOverview(rooms) {
