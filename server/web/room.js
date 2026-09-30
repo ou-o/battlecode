@@ -169,7 +169,7 @@ $('btnClose').onclick = () => { if (confirm('关闭房间？所有玩家会被�
 
 // ---- Render ----
 function render(s) {
-  $('code').textContent = s.code;
+  renderCode(String(s.code ?? '').padStart(3, '0'));
   $('phase').textContent = PHASE_CN[s.phase] ?? s.phase;
   $('phaseNo').textContent = 'SEC.' + String(s.code);
   // 正确显示房主昵称（快照 hostName），不再写死“房主控制台”。
@@ -209,6 +209,18 @@ function render(s) {
 
   setBar('red', s.units.find((u) => u.kind === 'base' && u.faction === 'red'));
   setBar('blue', s.units.find((u) => u.kind === 'base' && u.faction === 'blue'));
+}
+
+// 房间号渲染为三位「数码管」大数字格子；code 非三位数字时原样降级显示。
+function renderCode(code) {
+  const box = $('codeDigits');
+  if (!box) return;
+  box.setAttribute('aria-label', `房间号 ${code}`);
+  if (/^\d{3}$/.test(code)) {
+    box.innerHTML = code.split('').map((d) => `<span class="digit">${d}</span>`).join('');
+  } else {
+    box.innerHTML = `<span class="digit empty">${esc(code || '—')}</span>`;
+  }
 }
 
 function fillPlayers(tbody, players, unitBySocket) {

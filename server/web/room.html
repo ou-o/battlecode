@@ -18,19 +18,32 @@
   <section class="card" id="roomBar">
     <span class="sec-no" id="phaseNo">SEC.ROOM</span>
     <h2>房间 <span class="sub" id="phase">—</span></h2>
-    <div class="row">
-      <label>房间号<b><span class="mono" id="code">—</span></b></label>
-      <label>房主<b id="hostName">—</b></label>
-      <span class="spacer" style="flex:1"></span>
-      <button id="btnStart" class="btn btn-primary" disabled>开始游戏</button>
-      <button id="btnClose" class="btn btn-danger" disabled>关闭房间</button>
+
+    <div class="roombar">
+      <!-- 房间号：主视觉大数字，玩家凭此加入 -->
+      <div class="roomcode">
+        <span class="roomcode-label">房间号 · <b>ROOM CODE</b></span>
+        <div class="roomcode-digits" id="codeDigits" aria-label="房间号"></div>
+        <span class="muted-sm">玩家在小程序输入此号码加入对战</span>
+      </div>
+
+      <!-- 房主 + 操作 -->
+      <div class="roommeta">
+        <label>房主<b id="hostName">—</b></label>
+        <div class="roombtns">
+          <button id="btnStart" class="btn btn-primary" disabled>开始游戏</button>
+          <button id="btnClose" class="btn btn-danger" disabled>关闭房间</button>
+        </div>
+      </div>
     </div>
 
-    <!-- 重进验证码 + 复制按钮 -->
-    <p class="muted-sm token-caption">重进验证码</p>
-    <div class="tokenbar">
-      <input id="tokenField" readonly />
-      <button id="btnCopyRaw" class="btn btn-ghost btn-sm" disabled>复制验证码</button>
+    <!-- 重进验证码 + 复制按钮（房主私有凭据，次要显示） -->
+    <div class="tokenrow">
+      <span class="muted-sm">重进验证码</span>
+      <div class="tokenbar">
+        <input id="tokenField" readonly />
+        <button id="btnCopyRaw" class="btn btn-ghost btn-sm" disabled>复制验证码</button>
+      </div>
     </div>
   </section>
 

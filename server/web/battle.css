@@ -151,6 +151,48 @@ td .mono { font-family: var(--mono); color: var(--cyan); font-weight: 700; }
 }
 .tokenlink { font-family: var(--mono); color: var(--cyan); word-break: break-all; font-size: 13px; }
 
+/* ===== 房间号主视觉（房间页）===== */
+.roombar { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; margin: 4px 0 0; }
+.roomcode-label {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .28em;
+  text-transform: uppercase; color: var(--muted);
+}
+.roomcode-label b { color: var(--cyan); font-weight: 700; }
+.roomcode-digits { position: relative; display: flex; gap: 8px; padding: 9px; margin: 2px 0 4px; }
+.roomcode-digits::before, .roomcode-digits::after {
+  content: ""; position: absolute; width: 14px; height: 14px;
+  border: 2px solid var(--cyan-dim);
+}
+.roomcode-digits::before { left: 0; top: 0; border-right: none; border-bottom: none; }
+.roomcode-digits::after { right: 0; bottom: 0; border-left: none; border-top: none; }
+.digit {
+  display: flex; align-items: center; justify-content: center;
+  width: clamp(42px, 5vw, 52px); height: clamp(52px, 6.2vw, 64px);
+  background: linear-gradient(180deg, var(--panel2), var(--bg2));
+  border: 1px solid var(--line2);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  font-family: var(--mono); font-size: clamp(30px, 3.6vw, 38px); font-weight: 800;
+  color: var(--cyan); text-shadow: 0 0 22px rgba(77,216,255,.38);
+}
+.digit.empty { color: var(--line2); text-shadow: none; }
+.roommeta {
+  flex: 1; min-width: 260px; display: flex; flex-direction: column;
+  align-items: flex-end; gap: 16px; padding-top: 6px;
+}
+.roommeta label { font-size: 12px; }
+.roommeta label b { font-size: 15px; }
+.roombtns { display: flex; gap: 12px; }
+.tokenrow {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--line2);
+}
+.tokenrow .tokenbar { margin: 0; }
+@media (max-width: 860px) {
+  .roommeta { align-items: stretch; }
+  .roombtns { width: 100%; }
+  .roombtns .btn { flex: 1; }
+}
+
 /* ===== 血量条 ===== */
 .bar-row { display: flex; align-items: center; gap: 12px; margin: 9px 0; }
 .bar-row .lbl { width: 72px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
